@@ -1,8 +1,8 @@
 // C imports
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cerrno>
+#include <cstring>
 #include <linux/limits.h> // PATH_MAX
 #include <fcntl.h>
 #include <unistd.h>
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
     const char *source = argv[1];
 
     char fullsource[PATH_MAX + 1];
-    if (realpath(source, fullsource) == NULL) {
+    if (realpath(source, fullsource) == nullptr) {
         fprintf(stderr, "Failed to find the real path for '%s': %s", source, strerror(errno));
         return EXIT_FAILURE;
     }
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
     try {
         // H5::Exception::dontPrint();
         // create an h5 file handle
-        H5::H5File *h5file = new H5::H5File(output, H5F_ACC_TRUNC);
+        auto *h5file = new H5::H5File(output, H5F_ACC_TRUNC);
 
         // create mem data type for FragmentData
         H5::CompType mtype( sizeof(FragmentData) );
@@ -258,14 +258,14 @@ int main(int argc, char *argv[]) {
         // create a new group
         oss << "EventData";
         grp_name = oss.str();
-        H5::Group *grp = new H5::Group(h5file->createGroup(grp_name));
+        auto *grp = new H5::Group(h5file->createGroup(grp_name));
 
         // create a dataspace for fragments data
         hsize_t dim[] = { pfragdata->size() };
-        H5::DataSpace *dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
+        auto *dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
 
         // create a dataset under the new group
-        H5::DataSet *dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, mtype, *dspace));
+        auto *dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, mtype, *dspace));
         // write dataset
         dset->write(pfragdata->data(), mtype);
 

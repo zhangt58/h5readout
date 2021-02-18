@@ -30,10 +30,9 @@ typedef struct FragmentData {
   uint16_t adc_over_underflow;
 } FragmentData;
 
-// type for physics event data
+// type for physics event data, trace only
 typedef struct EventData {
-  uint16_t event_id;
-  uint16_t frag_cnt;
+  uint64_t event_id;
   std::vector<FragmentData> *fragdata = new std::vector<FragmentData>();
 } EventData;
 
@@ -65,8 +64,11 @@ const std::string
     FRAGMENT_DATA_ADC_OVER_UNDER_FLOW("ADC Over/Underflow"); // uint16_t
 // others
 const std::string FRAGMENT_DATA_EVENT_ID("Event ID"); // uint64_t
+// group name
+const std::string PHYSICS_EVENT_GROUP_NAME("PhysicsEvents");
 // dataset name
 const std::string FRAGMENTS_DSET_NAME("Fragments");
+const std::string TRACES_DSET_NAME("Traces");
 // fragment data rank
 const int FRAGMENT_DATA_RANK = 1;
 

@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
   uint64_t event_id = 0;
   uint64_t frag_id = 0;
   uint64_t frag_i = 0;
-  uint64_t max_evt_cnt = 4000; // INT_MAX;
+  uint64_t max_evt_cnt = INT_MAX;
   try {
     // H5::Exception::dontPrint();
     // create an h5 file handle
@@ -279,47 +279,74 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "Trace data size: %i\n", ptracedata->size());
     fprintf(stdout, "Total fragments: %i\n", frag_id);
 
-    //std::vector<uint16_t>& tracedata_ref = *ptracedata;
-    //for (int i = 0; i < ptracedata->size(); i++)
-    //    std::cout << tracedata_ref[i] << " ";
-    //    std::cout << (*ptracedata)[i] << " ";
-    //std::cout << std::endl;
+    // create 2d array for trace data
+    int dim0, dim1;
+    int trace_length = ptracedata->size() / frag_id; // frag_id (nrows), trace_length (ncolumns)
+    dim0 = frag_id;
+    dim1 = trace_length;
+    int nrows_sub = 10; // how many rows write per time
+    int current_row_id = 0;
+    uint16_t tracedata_subarr[nrows_sub][dim1];
 
-    // create 2d array to host tracedata
-    long dim0 = frag_id; // rows
-    long dim1 = ptracedata->size() / frag_id; // columns
-    uint16_t tracedata_arr[dim0][dim1];
-    /*
-    uint16_t **tracedata_arr = (uint16_t**) malloc (dim0 * sizeof (uint16_t*));
-    for(int i = 0; i < dim0; i++)
-        tracedata_arr[i] = (uint16_t*) malloc(dim1 * sizeof (uint16_t));
-    */
-    for(long i = 0; i < dim0; i++) {
-        for(long j = 0; j < dim1; j++) {
-            tracedata_arr[i][j] = (*ptracedata)[dim1 * i + j];
-        }
-    }
-
-    hsize_t trace_dim[2];
-    trace_dim[0] = dim0;
-    trace_dim[1] = dim1;
     // create a new dataset under the defined group, TraceData
     H5::IntType trace_dtype(H5::PredType::NATIVE_SHORT);
     trace_dtype.setOrder(H5T_ORDER_LE);
-    H5::DataSpace trace_dspace(2, trace_dim);
-    auto *trace_dset = new H5::DataSet(grp->createDataSet(TRACES_DSET_NAME, trace_dtype, trace_dspace));
-    trace_dset->write(tracedata_arr, trace_dtype);
 
-    /*
-    // free
-    for(int i = 0; i < dim0; i++)
-        free(tracedata_arr[i]);
-    free(tracedata_arr);
-    */
-    //
+    // extensible dataset for Traces
+    hsize_t trace_dims[2] = {nrows_sub, dim1}; // initial dset shape
+    hsize_t max_trace_dims[2] = {H5S_UNLIMITED, H5S_UNLIMITED};
+    H5::DataSpace trace_dspace(TRACE_DATA_RANK, trace_dims, max_trace_dims);
+
+    // modify dataset creation properties, e.g. enable chunking
+    H5::DSetCreatPropList cprops;
+    hsize_t chunk_dims[2] = {10, 1000};
+    cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
+
+    // create Traces dataset
+    H5::DataSet trace_dset = grp->createDataSet(TRACES_DSET_NAME, trace_dtype, trace_dspace, cprops);
+
+    H5::DataSpace fspace;
+    hsize_t size[2];
+    size[1] = dim1;
+    hsize_t offset[2];
+    offset[1] = 0;
+    hsize_t trace_dims1[2];
+    trace_dims1[1] = dim1;
+
+    while (current_row_id < dim0) {
+
+        // prep data
+        for(int i = 0; i < nrows_sub; i++) {
+            for(int j = 0; j < dim1; j++) {
+                tracedata_subarr[i][j] = (*ptracedata) [(i + current_row_id) * dim1 + j];
+            }
+        }
+
+        // extend size along dim0
+        size[0] += nrows_sub;
+
+        // extend the dataset
+        trace_dset.extend(size);
+
+        // select a hyperslab
+        fspace = trace_dset.getSpace();
+        offset[0] = current_row_id;
+        trace_dims1[0] = nrows_sub;
+        fspace.selectHyperslab(H5S_SELECT_SET, trace_dims1, offset);
+
+        /*
+        std::cout << "Extend size to: " << size[0] << ", " << size[1] << std::endl;
+        std::cout << "Starting row: " << current_row_id << std::endl;
+        std::cout << "Offset: " << offset[0] << ", " << offset[1] << std::endl;
+        std::cout << "Sub dataset size: " << trace_dims1[0] << ", " << trace_dims[1] << std::endl;
+        */
+
+        trace_dset.write(tracedata_subarr, trace_dtype, trace_dspace, fspace);
+        current_row_id += nrows_sub;
+    }
+
     delete pfragdata;
     delete ptracedata;
-    delete trace_dset;
     delete dset;
     delete dspace;
     delete grp;
@@ -341,7 +368,6 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Failed to read and export event stream to HDF5.\n");
     return EXIT_FAILURE;
   }
-
-  printf("Done with event stream\n");
+  fprintf(stdout, "Read and process %i events in total.\n", frag_id);
   return EXIT_SUCCESS;
 }

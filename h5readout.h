@@ -71,6 +71,7 @@ const std::string FRAGMENTS_DSET_NAME("Fragments");
 const std::string TRACES_DSET_NAME("Traces");
 // fragment data rank
 const int FRAGMENT_DATA_RANK = 1;
+const int TRACE_DATA_RANK = 2;
 
 /*
 data structure:

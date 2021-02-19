@@ -37,7 +37,7 @@ using namespace DAQ::DDAS;
 const int NROWS_PER_WRITE = 100;
 
 // chunk dims
-const int CHUNK_DIM0 = 10;
+const int CHUNK_DIM0 = 100;
 const int CHUNK_DIM1 = 1000;
 
 // max events to readout
@@ -311,6 +311,8 @@ int main(int argc, char *argv[]) {
     H5::DSetCreatPropList cprops;
     hsize_t chunk_dims[2] = {CHUNK_DIM0, CHUNK_DIM1};
     cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
+    // cprops.setDeflate(8);
+    cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
 
     // create Traces dataset
     H5::DataSet trace_dset = grp->createDataSet(TRACES_DSET_NAME, trace_dtype, trace_dspace, cprops);

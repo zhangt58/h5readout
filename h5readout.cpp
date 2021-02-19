@@ -33,35 +33,42 @@
 
 using namespace DAQ::DDAS;
 
-static void print_trace(std::vector<uint16_t> &trace) {
-  for (auto &i : trace) {
-    std::cout << i << " ";
-  }
-  std::cout << std::endl;
-}
+// rows of trace data written at once.
+const int NROWS_PER_WRITE = 100;
 
+// chunk dims
+const int CHUNK_DIM0 = 10;
+const int CHUNK_DIM1 = 1000;
+
+// max events to readout
+const int MAX_EVTS = INT_MAX;
+
+
+/**
+ * Process ringtime to extract fragment data from physics event.
+ * return total fragment data count.
+ */
 uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
-                         std::vector<FragmentData> *fragdata,
-                         std::vector<uint16_t> *tracedata) {
+                      std::vector<FragmentData> *pfragdata,
+                      std::vector<uint16_t> *ptracedata) {
   FragmentIndex indexer{static_cast<uint16_t *>(item.getBodyPointer())};
-  int total_fragmts = indexer.getNumberFragments();
+  // int total_fragmts = indexer.getNumberFragments();
 
   CRingItemFactory factory;
   DDASHitUnpacker unpacker;
 
-  uint64_t frag_i = 0;
+  uint64_t frag_cnt = 0; // should equal total_fragmts
+
   // Parse fragments into hits
   for (auto &fragment : indexer) {
     // data container for fragment
     FragmentData i_fragdata{.event_id = event_id};
-    frag_i++;
+    frag_cnt++;
     //
     // fprintf(stdout, "Processing event %i, fragment %i.\n", event_id, fragment.s_sourceId);
     //
-    CRingItem *frag_raw =
-        factory.createRingItem(reinterpret_cast<uint8_t *>(fragment.s_itemhdr));
-    std::unique_ptr<CPhysicsEventItem> frag_item(
-        dynamic_cast<CPhysicsEventItem *>(frag_raw));
+    CRingItem *frag_raw = factory.createRingItem(reinterpret_cast<uint8_t *>(fragment.s_itemhdr));
+    std::unique_ptr<CPhysicsEventItem> frag_item(dynamic_cast<CPhysicsEventItem *>(frag_raw));
 
     uint32_t *begin = reinterpret_cast<uint32_t *>(frag_item->getBodyPointer());
     uint32_t *sentinel = begin + frag_item->getBodySize() / sizeof(uint32_t);
@@ -126,10 +133,8 @@ uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
     uint32_t resolution = hit.GetADCResolution();
     i_fragdata.adc_resolution = resolution;
 
-    uint16_t adc_over_underflow =
-        static_cast<uint16_t>(hit.GetADCOverflowUnderflow());
-    uint16_t flags =
-        (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
+    uint16_t adc_over_underflow = static_cast<uint16_t>(hit.GetADCOverflowUnderflow());
+    uint16_t flags = (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
     i_fragdata.adc_over_underflow = adc_over_underflow;
 
     /*
@@ -154,16 +159,17 @@ uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
     fprintf(stdout, " Get %20s: %i\n", "ADCResolution"       , resolution);
     fprintf(stdout, " Get %20s: %i\n", "ADCOverflowUnderflow", adc_over_underflow);
     */
+
     std::vector<uint16_t> &trace = hit.GetTrace();
     uint16_t *ptr = trace.data();
     for(int i = 0; i < trace_len; i++) {
-         tracedata->push_back(*ptr++);
+         ptracedata->push_back(*ptr++);
     }
-
-    fragdata->push_back(i_fragdata);
+    pfragdata->push_back(i_fragdata);
   }
-  return frag_i;
+  return frag_cnt;
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -201,11 +207,8 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  printf("Starting event stream for %s\n", uri);
-
-  char output[PATH_MAX + 9] = {};
-  snprintf(output, sizeof(output), "%s.h5", fullsource);
-  printf("Dumping events to file %s\n", output);
+  char outfile[PATH_MAX + 9] = {};
+  snprintf(outfile, sizeof(outfile), "%s.h5", fullsource);
 
   // container for all fragments (exclude trace)
   std::vector<FragmentData> *pfragdata = new std::vector<FragmentData>();
@@ -213,14 +216,14 @@ int main(int argc, char *argv[]) {
   std::vector<uint16_t> *ptracedata = new std::vector<uint16_t>();
 
   CRingItem *pItem;
-  uint64_t event_id = 0;
-  uint64_t frag_id = 0;
-  uint64_t frag_i = 0;
-  uint64_t max_evt_cnt = INT_MAX;
+  uint64_t event_id = 0;  // event count
+  uint64_t frag_cnt = 0;  // total framgnets count
+  uint64_t frag_i = 0;    // fragments count per event
+  uint64_t max_evt_cnt = MAX_EVTS;
   try {
-    // H5::Exception::dontPrint();
+     H5::Exception::dontPrint();
     // create an h5 file handle
-    auto *h5file = new H5::H5File(output, H5F_ACC_TRUNC);
+    auto *h5file = new H5::H5File(outfile, H5F_ACC_TRUNC);
 
     // create mem data type for FragmentData
     const H5::CompType frag_dtype(sizeof(FragmentData));
@@ -246,11 +249,12 @@ int main(int argc, char *argv[]) {
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,        HOFFSET(FragmentData, adc_resolution),        H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_OVER_UNDER_FLOW,   HOFFSET(FragmentData, adc_over_underflow),    H5::PredType::NATIVE_SHORT);
 
-    //
+    // start to read
+    fprintf(stdout, "Reading data from: %s\n", uri);
+    // readout fragment data
     while (event_id < max_evt_cnt && (pItem = data_source->getItem())) {
       std::unique_ptr<CRingItem> item(pItem);
-      std::unique_ptr<CRingItem> castableItem(
-          CRingItemFactory::createRingItem(*item));
+      std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item));
 
       // We're only interested in Physics Events
       if (castableItem->type() != PHYSICS_EVENT)
@@ -259,8 +263,11 @@ int main(int argc, char *argv[]) {
       // each event data goes to one group named "Event<event_id>" under root
       frag_i = process_item(event_id++, dynamic_cast<CPhysicsEventItem &>(*castableItem),
                             pfragdata, ptracedata);
-      frag_id += frag_i;
+      frag_cnt += frag_i;
     }
+
+    // start to write
+    fprintf(stdout, "Writing data to  : %s\n", outfile);
 
     // create a new group "PhysicsEvent"
     auto *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
@@ -270,22 +277,23 @@ int main(int argc, char *argv[]) {
     auto *dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
 
     // create a dataset under the new group
-    auto *dset = new H5::DataSet(
-        grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
+    auto *dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
+
     // write dataset
     dset->write(pfragdata->data(), frag_dtype);
 
     // trace data as another dataset
-    fprintf(stdout, "Trace data size: %i\n", ptracedata->size());
-    fprintf(stdout, "Total fragments: %i\n", frag_id);
+    long tracedata_cnt = ptracedata->size();
+    fprintf(stdout, "Trace data size: %i (%i MB)\n", tracedata_cnt, tracedata_cnt * sizeof(uint16_t) / 1024 / 1024);
+    fprintf(stdout, "Total fragments: %i (%i MB)\n", frag_cnt, frag_cnt * sizeof(FragmentData) / 1024 / 1024);
 
     // create 2d array for trace data
     int dim0, dim1;
-    int trace_length = ptracedata->size() / frag_id; // frag_id (nrows), trace_length (ncolumns)
-    dim0 = frag_id;
+    int trace_length = tracedata_cnt / frag_cnt; // frag_cnt (nrows), trace_length (ncolumns)
+    dim0 = frag_cnt;
     dim1 = trace_length;
-    int nrows_sub = 10; // how many rows write per time
-    int current_row_id = 0;
+    int nrows_sub = NROWS_PER_WRITE; // how many rows write per time
+    int current_row_id = 0;          // starting at the first fragment
     uint16_t tracedata_subarr[nrows_sub][dim1];
 
     // create a new dataset under the defined group, TraceData
@@ -293,13 +301,15 @@ int main(int argc, char *argv[]) {
     trace_dtype.setOrder(H5T_ORDER_LE);
 
     // extensible dataset for Traces
-    hsize_t trace_dims[2] = {nrows_sub, dim1}; // initial dset shape
+    hsize_t trace_dims[2]; // initial dset shape
+    trace_dims[0] = nrows_sub;
+    trace_dims[1] = dim1;
     hsize_t max_trace_dims[2] = {H5S_UNLIMITED, H5S_UNLIMITED};
     H5::DataSpace trace_dspace(TRACE_DATA_RANK, trace_dims, max_trace_dims);
 
     // modify dataset creation properties, e.g. enable chunking
     H5::DSetCreatPropList cprops;
-    hsize_t chunk_dims[2] = {10, 1000};
+    hsize_t chunk_dims[2] = {CHUNK_DIM0, CHUNK_DIM1};
     cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
 
     // create Traces dataset
@@ -368,6 +378,6 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Failed to read and export event stream to HDF5.\n");
     return EXIT_FAILURE;
   }
-  fprintf(stdout, "Read and process %i events in total.\n", frag_id);
+  fprintf(stdout, "Read and write %i fragments in %i events in total.\n", frag_cnt, event_id);
   return EXIT_SUCCESS;
 }

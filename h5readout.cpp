@@ -14,11 +14,14 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <locale>
 
 // NSCLDAQ imports
 #include <CDataSource.h>
 #include <CDataSourceFactory.h>
 #include <CErrnoException.h>
+#include <CRingStateChangeItem.h>
+#include <CRingPhysicsEventCountItem.h>
 #include <CPhysicsEventItem.h>
 #include <CPortManagerException.h>
 #include <CRingItemFactory.h>
@@ -46,27 +49,30 @@ const int MAX_EVTS = INT_MAX;
 
 /**
  * Process ringtime to extract fragment data from physics event.
- * return total fragment data count.
+ * 
  */
-uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
-                      std::vector<FragmentData> *pfragdata,
-                      std::vector<uint16_t> *ptracedata) {
+void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item,
+                  std::vector<FragmentData> *pfragdata,
+                  std::vector<uint16_t> *ptracedata) {
   FragmentIndex indexer{static_cast<uint16_t *>(item.getBodyPointer())};
   // int total_fragmts = indexer.getNumberFragments();
 
   CRingItemFactory factory;
   DDASHitUnpacker unpacker;
 
-  uint64_t frag_cnt = 0; // should equal total_fragmts
-
   // Parse fragments into hits
   for (auto &fragment : indexer) {
     // data container for fragment
-    FragmentData i_fragdata{.event_id = event_id};
-    frag_cnt++;
-    //
-    // fprintf(stdout, "Processing event %i, fragment %i.\n", event_id, fragment.s_sourceId);
-    //
+    FragmentData i_fragdata {
+      .fragment_id = frag_cnt++,
+      .event_id = event_id
+    };
+
+    /*
+    fprintf(stdout, "Processing event: %i, fragment: %i, timestamp: %u, headersize: %i\n",
+            event_id, fragment.s_sourceId, fragment.s_timestamp, fragment.s_size);
+    */
+
     CRingItem *frag_raw = factory.createRingItem(reinterpret_cast<uint8_t *>(fragment.s_itemhdr));
     std::unique_ptr<CPhysicsEventItem> frag_item(dynamic_cast<CPhysicsEventItem *>(frag_raw));
 
@@ -94,48 +100,37 @@ uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
     uint32_t energy = static_cast<uint32_t>(hit.GetEnergy());
     i_fragdata.energy = energy;
 
-    uint32_t time_high = static_cast<uint32_t>(hit.GetTimeHigh());
-    i_fragdata.time_high = time_high;
-
-    uint32_t time_low = static_cast<uint32_t>(hit.GetTimeLow());
-    i_fragdata.time_low = time_low;
-
-    uint32_t time_cfd = static_cast<uint32_t>(hit.GetTimeCFD());
-    i_fragdata.time_cfd = time_cfd;
-
     uint32_t pileup = static_cast<uint32_t>(hit.GetFinishCode());
     i_fragdata.finish_code = pileup;
 
-    uint32_t chan_len = hit.GetChannelLength();
+    uint32_t chan_len = static_cast<uint32_t>(hit.GetChannelLength());
     i_fragdata.channel_length = chan_len;
 
-    uint32_t chan_hlen = hit.GetChannelLengthHeader();
+    uint32_t chan_hlen = static_cast<uint32_t>(hit.GetChannelLengthHeader());
     i_fragdata.channel_header_length = chan_hlen;
 
-    uint32_t overflow_code = hit.GetOverflowCode();
+    uint32_t overflow_code = static_cast<uint32_t>(hit.GetOverflowCode());
     i_fragdata.overflow_code = overflow_code;
-
-    uint32_t cfd_trig_source_bit = hit.GetCFDTrigSource();
-    i_fragdata.cfd_trig_source_bit = cfd_trig_source_bit;
 
     uint32_t cfd_fail_bit = static_cast<uint32_t>(hit.GetCFDFailBit());
     i_fragdata.cfd_fail_bit = cfd_fail_bit;
 
-    uint32_t trace_len = hit.GetTraceLength();
+    uint32_t trace_len = static_cast<uint32_t>(hit.GetTraceLength());
     i_fragdata.trace_length = trace_len;
 
-    uint32_t frequency = hit.GetModMSPS();
+    uint32_t frequency = static_cast<uint32_t>(hit.GetModMSPS());
     i_fragdata.adc_frequency = frequency;
 
     uint32_t hw_rev = static_cast<uint32_t>(hit.GetHardwareRevision());
     i_fragdata.hardware_revision = hw_rev;
 
-    uint32_t resolution = hit.GetADCResolution();
+    uint32_t resolution = static_cast<uint32_t>(hit.GetADCResolution());
     i_fragdata.adc_resolution = resolution;
 
     uint16_t adc_over_underflow = static_cast<uint16_t>(hit.GetADCOverflowUnderflow());
-    uint16_t flags = (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
+    uint16_t error_flag = (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
     i_fragdata.adc_over_underflow = adc_over_underflow;
+    i_fragdata.error_flag = error_flag;
 
     /*
     fprintf(stdout, " Get %20s: %i\n", "CrateID"             , crate_id);
@@ -144,20 +139,17 @@ uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
     fprintf(stdout, " Get %20s: %f\n", "Time"                , ts);
     fprintf(stdout, " Get %20s: %d\n", "CoarseTime"          , ts_coarse);
     fprintf(stdout, " Get %20s: %i\n", "Energy"              , energy);
-    fprintf(stdout, " Get %20s: %i\n", "Time High"           , time_high);
-    fprintf(stdout, " Get %20s: %i\n", "Time Low"            , time_low);
-    fprintf(stdout, " Get %20s: %i\n", "Time CFD"            , time_cfd);
     fprintf(stdout, " Get %20s: %i\n", "FinishCode"          , pileup);
     fprintf(stdout, " Get %20s: %i\n", "ChannelLength"       , chan_len);
     fprintf(stdout, " Get %20s: %i\n", "ChannelHeaderLength" , chan_hlen);
     fprintf(stdout, " Get %20s: %i\n", "Overflow Code"       , overflow_code);
-    fprintf(stdout, " Get %20s: %i\n", "CFD Trig Source"     , cfd_trig_source_bit);
     fprintf(stdout, " Get %20s: %i\n", "CFDFailBit"          , cfd_fail_bit);
     fprintf(stdout, " Get %20s: %i\n", "TraceLength"         , trace_len);
     fprintf(stdout, " Get %20s: %i\n", "ADC Frequency"       , frequency);
     fprintf(stdout, " Get %20s: %i\n", "HardwareRevision"    , hw_rev);
     fprintf(stdout, " Get %20s: %i\n", "ADCResolution"       , resolution);
     fprintf(stdout, " Get %20s: %i\n", "ADCOverflowUnderflow", adc_over_underflow);
+    fprintf(stdout, " Get %20s: %i\n", "Error flag"          , error_flag);
     */
 
     std::vector<uint16_t> &trace = hit.GetTrace();
@@ -167,7 +159,6 @@ uint16_t process_item(uint64_t event_id, CPhysicsEventItem &item,
     }
     pfragdata->push_back(i_fragdata);
   }
-  return frag_cnt;
 }
 
 
@@ -218,8 +209,10 @@ int main(int argc, char *argv[]) {
   CRingItem *pItem;
   uint64_t event_id = 0;  // event count
   uint64_t frag_cnt = 0;  // total framgnets count
-  uint64_t frag_i = 0;    // fragments count per event
   uint64_t max_evt_cnt = MAX_EVTS;
+
+  RunMetaData run_metadata;
+  
   try {
      H5::Exception::dontPrint();
     // create an h5 file handle
@@ -227,6 +220,7 @@ int main(int argc, char *argv[]) {
 
     // create mem data type for FragmentData
     const H5::CompType frag_dtype(sizeof(FragmentData));
+    frag_dtype.insertMember(FRAGMENT_DATA_FRAGMENT_ID,           HOFFSET(FragmentData, fragment_id),           H5::PredType::NATIVE_LONG);
     frag_dtype.insertMember(FRAGMENT_DATA_EVENT_ID,              HOFFSET(FragmentData, event_id),              H5::PredType::NATIVE_LONG);
     frag_dtype.insertMember(FRAGMENT_DATA_TIMESTAMP,             HOFFSET(FragmentData, timestamp),             H5::PredType::NATIVE_DOUBLE);
     frag_dtype.insertMember(FRAGMENT_DATA_COARSE_TIME,           HOFFSET(FragmentData, coarse_time),           H5::PredType::NATIVE_LONG);
@@ -235,19 +229,16 @@ int main(int argc, char *argv[]) {
     frag_dtype.insertMember(FRAGMENT_DATA_CRATE_ID,              HOFFSET(FragmentData, crate_id),              H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_SLOT_ID,               HOFFSET(FragmentData, slot_id),               H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_ID,            HOFFSET(FragmentData, channel_id),            H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_TIME_HIGH,             HOFFSET(FragmentData, time_high),             H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_TIME_LOW,              HOFFSET(FragmentData, time_low),              H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_TIME_CFD,              HOFFSET(FragmentData, time_cfd),              H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_FINISH_CODE,           HOFFSET(FragmentData, finish_code),           H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_LENGTH,        HOFFSET(FragmentData, channel_length),        H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_HEADER_LENGTH, HOFFSET(FragmentData, channel_header_length), H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_OVERFLOW_CODE,         HOFFSET(FragmentData, overflow_code),         H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_CFD_TRIG_SOURCE_BIT,   HOFFSET(FragmentData, cfd_trig_source_bit),   H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_CFD_FAIL_BIT,          HOFFSET(FragmentData, cfd_fail_bit),          H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_MODMSPS,               HOFFSET(FragmentData, adc_frequency),         H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_HW_REVISION,           HOFFSET(FragmentData, hardware_revision),     H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,        HOFFSET(FragmentData, adc_resolution),        H5::PredType::NATIVE_INT);
+    frag_dtype.insertMember(FRAGMENT_DATA_FINISH_CODE,           HOFFSET(FragmentData, finish_code),           H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_OVER_UNDER_FLOW,   HOFFSET(FragmentData, adc_over_underflow),    H5::PredType::NATIVE_SHORT);
+    frag_dtype.insertMember(FRAGMENT_DATA_CFD_FAIL_BIT,          HOFFSET(FragmentData, cfd_fail_bit),          H5::PredType::NATIVE_INT);
+    frag_dtype.insertMember(FRAGMENT_DATA_OVERFLOW_CODE,         HOFFSET(FragmentData, overflow_code),         H5::PredType::NATIVE_INT);
+    frag_dtype.insertMember(FRAGMENT_DATA_ERROR_FLAG,            HOFFSET(FragmentData, error_flag),            H5::PredType::NATIVE_SHORT);
+    frag_dtype.insertMember(FRAGMENT_DATA_MODMSPS,               HOFFSET(FragmentData, adc_frequency),         H5::PredType::NATIVE_INT);
+    frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,        HOFFSET(FragmentData, adc_resolution),        H5::PredType::NATIVE_INT);
+    frag_dtype.insertMember(FRAGMENT_DATA_HW_REVISION,           HOFFSET(FragmentData, hardware_revision),     H5::PredType::NATIVE_INT);
 
     // start to read
     fprintf(stdout, "Reading data from: %s\n", uri);
@@ -256,14 +247,34 @@ int main(int argc, char *argv[]) {
       std::unique_ptr<CRingItem> item(pItem);
       std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item));
 
-      // We're only interested in Physics Events
-      if (castableItem->type() != PHYSICS_EVENT)
-        continue;
-
-      // each event data goes to one group named "Event<event_id>" under root
-      frag_i = process_item(event_id++, dynamic_cast<CPhysicsEventItem &>(*castableItem),
-                            pfragdata, ptracedata);
-      frag_cnt += frag_i;
+      switch (castableItem->type()) {
+        case BEGIN_RUN: {
+          CRingStateChangeItem &item2 = dynamic_cast<CRingStateChangeItem &>(*castableItem);
+          run_metadata.number = item2.getRunNumber();
+          strcpy(run_metadata.title, item2.getTitle().c_str());
+          run_metadata.ts = item2.getTimestamp();
+          std::strftime(run_metadata.date, sizeof(run_metadata.date), "%c", std::localtime(&run_metadata.ts));
+          std::cout << "Run #: " << item2.getRunNumber() << "\n"
+                    << " Title: " << item2.getTitle() << "\n"
+                    << " Timestamp: " << item2.getTimestamp() << "\n"
+                    << " Datetime: " << run_metadata.date
+                    << std::endl;
+          break;
+        }
+        case PHYSICS_EVENT: { // Physics Event
+          // each event data goes to one group named "Event<event_id>" under root
+          process_item(event_id++, frag_cnt, dynamic_cast<CPhysicsEventItem &>(*castableItem),
+                       pfragdata, ptracedata);
+          break;
+          }
+        case PHYSICS_EVENT_COUNT: { // Physics Event Count
+          // CRingPhysicsEventCountItem &item1 = dynamic_cast<CRingPhysicsEventCountItem &>(*castableItem);
+          // std::cout << "Physics Event Count: " << item1.getEventCount() << std::endl;
+          break;
+          }
+        default:
+          break;
+      }
     }
 
     // start to write
@@ -272,12 +283,27 @@ int main(int argc, char *argv[]) {
     // create a new group "PhysicsEvent"
     auto *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
 
+    // meta data
+    // run number
+    auto attr_run_number = new H5::Attribute(grp->createAttribute(META_DATA_RUN_NUMBER, H5::PredType::NATIVE_INT, H5::DataSpace(H5S_SCALAR)));
+    attr_run_number->write(H5::PredType::NATIVE_INT, &run_metadata.number);
+    // title
+    H5::StrType stype(H5::PredType::C_S1, 80);
+    auto attr_title = new H5::Attribute(grp->createAttribute(META_DATA_TITLE, stype, H5::DataSpace(H5S_SCALAR)));
+    attr_title->write(stype, run_metadata.title);
+    // ts
+    auto attr_ts = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP, H5::PredType::NATIVE_INT, H5::DataSpace(H5S_SCALAR)));
+    attr_ts->write(H5::PredType::NATIVE_INT, &run_metadata.ts);
+    // date
+    auto attr_date = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME, stype, H5::DataSpace(H5S_SCALAR)));
+    attr_date->write(stype, run_metadata.date);
+
     // create a dataspace for fragments data
     hsize_t dim[] = {pfragdata->size()};
-    auto *dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
+    auto dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
 
     // create a dataset under the new group
-    auto *dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
+    auto dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
 
     // write dataset
     dset->write(pfragdata->data(), frag_dtype);

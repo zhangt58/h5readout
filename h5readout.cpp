@@ -16,6 +16,8 @@
 #include <vector>
 #include <locale>
 
+#include "cxxopts.hpp" // args parser
+
 // NSCLDAQ imports
 #include <CDataSource.h>
 #include <CDataSourceFactory.h>
@@ -37,15 +39,7 @@
 using namespace DAQ::DDAS;
 
 // rows of trace data written at once.
-const int NROWS_PER_WRITE = 100;
-
-// chunk dims
-const int CHUNK_DIM0 = 100;
-const int CHUNK_DIM1 = 1000;
-
-// max events to readout
-const int MAX_EVTS = INT_MAX;
-
+const int NROWS_PER_WRITE = 1;
 
 /**
  * Process ringtime to extract fragment data from physics event.
@@ -162,25 +156,50 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
 }
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char** argv) {
 
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s source.evt\n", argv[0]);
-    fprintf(stderr, "   Output will be named source.evt.evtdata\n");
+  cxxopts::Options options("h5readout", "Readout DDAS event data to H5 format.");
+  options.add_options()
+    ("i,input", "URI for input event data", cxxopts::value<std::string>())
+    ("o,output", "File path for HDF5 data", cxxopts::value<std::string>())
+    ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
+    ("s,chunk-size", "Chunk size mxn for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
+    ("h,help", "Print this message")
+   ;
+  auto result = options.parse(argc, argv);
+  if (result.count("help") || ! result.count("input") || ! result.count("output")) {
+    std::cout << options.help() << std::endl;
     return EXIT_FAILURE;
   }
 
-  const char *source = argv[1];
+  std::string ifname = result["input"].as<std::string>();
+  std::string ofname = result["output"].as<std::string>();
+  uint64_t max_evt_cnt = result["events"].as<int>();
+  std::string chunk_size = result["chunk-size"].as<std::string>();
+  std::stringstream ss(chunk_size);
+  hsize_t chunk_dims[2];
+  int i;
+  int idx = 0;
+  while (ss >> i) {
+    chunk_dims[idx++] = i;
+    if (ss.peek() == 'x') ss.ignore();
+  }
 
   char fullsource[PATH_MAX + 1];
-  if (realpath(source, fullsource) == nullptr) {
-    fprintf(stderr, "Failed to find the real path for '%s': %s", source,
+  if (realpath(ifname.c_str(), fullsource) == nullptr) {
+    fprintf(stderr, "Failed to find the real path for '%s': %s", ifname.c_str(),
             strerror(errno));
     return EXIT_FAILURE;
   }
-
   char uri[PATH_MAX + 8];
   snprintf(uri, sizeof(uri), "file://%s", fullsource);
+
+  char outfile[PATH_MAX + 1];
+  if (realpath(ofname.c_str(), outfile) == nullptr) {
+    fprintf(stderr, "Failed to find the real path for '%s': %s", ofname.c_str(),
+            strerror(errno));
+    return EXIT_FAILURE;
+  }
 
   // Ring Item types that can be sampled
   std::vector<std::uint16_t> sample;
@@ -198,9 +217,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  char outfile[PATH_MAX + 9] = {};
-  snprintf(outfile, sizeof(outfile), "%s.h5", fullsource);
-
   // container for all fragments (exclude trace)
   std::vector<FragmentData> *pfragdata = new std::vector<FragmentData>();
   // container for all trace data
@@ -209,14 +225,13 @@ int main(int argc, char *argv[]) {
   CRingItem *pItem;
   uint64_t event_id = 0;  // event count
   uint64_t frag_cnt = 0;  // total framgnets count
-  uint64_t max_evt_cnt = MAX_EVTS;
 
   RunMetaData run_metadata;
   
   try {
-     H5::Exception::dontPrint();
+    // H5::Exception::dontPrint();
     // create an h5 file handle
-    auto *h5file = new H5::H5File(outfile, H5F_ACC_TRUNC);
+    auto h5file = new H5::H5File(outfile, H5F_ACC_TRUNC);
 
     // create mem data type for FragmentData
     const H5::CompType frag_dtype(sizeof(FragmentData));
@@ -254,11 +269,6 @@ int main(int argc, char *argv[]) {
           strcpy(run_metadata.title, item2.getTitle().c_str());
           run_metadata.ts = item2.getTimestamp();
           std::strftime(run_metadata.date, sizeof(run_metadata.date), "%c", std::localtime(&run_metadata.ts));
-          std::cout << "Run #: " << item2.getRunNumber() << "\n"
-                    << " Title: " << item2.getTitle() << "\n"
-                    << " Timestamp: " << item2.getTimestamp() << "\n"
-                    << " Datetime: " << run_metadata.date
-                    << std::endl;
           break;
         }
         case PHYSICS_EVENT: { // Physics Event
@@ -277,8 +287,19 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    // update metadata
+    run_metadata.n_frags = frag_cnt;
+    run_metadata.n_events = event_id;
+    std::cout << "Run #: " << run_metadata.number << "\n"
+              << " Title: " << run_metadata.title << "\n"
+              << " Timestamp: " << run_metadata.ts << "\n"
+              << " Datetime: " << run_metadata.date << "\n"
+              << " Read events: " << run_metadata.n_events << "\n"
+              << " Read fragments: " << run_metadata.n_frags
+              << std::endl;
+
     // start to write
-    fprintf(stdout, "Writing data to  : %s\n", outfile);
+    fprintf(stdout, "Writing data to: %s\n", outfile);
 
     // create a new group "PhysicsEvent"
     auto *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
@@ -297,6 +318,12 @@ int main(int argc, char *argv[]) {
     // date
     auto attr_date = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME, stype, H5::DataSpace(H5S_SCALAR)));
     attr_date->write(stype, run_metadata.date);
+    // total events
+    auto attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS, H5::PredType::NATIVE_LONG, H5::DataSpace(H5S_SCALAR)));
+    attr_n_events->write(H5::PredType::NATIVE_LONG, &run_metadata.n_events);
+    // total fragments
+    auto attr_n_frags = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_FRAGMENTS, H5::PredType::NATIVE_LONG, H5::DataSpace(H5S_SCALAR)));
+    attr_n_frags->write(H5::PredType::NATIVE_LONG, &run_metadata.n_frags);
 
     // create a dataspace for fragments data
     hsize_t dim[] = {pfragdata->size()};
@@ -310,8 +337,8 @@ int main(int argc, char *argv[]) {
 
     // trace data as another dataset
     long tracedata_cnt = ptracedata->size();
-    fprintf(stdout, "Trace data size: %i (%i MB)\n", tracedata_cnt, tracedata_cnt * sizeof(uint16_t) / 1024 / 1024);
-    fprintf(stdout, "Total fragments: %i (%i MB)\n", frag_cnt, frag_cnt * sizeof(FragmentData) / 1024 / 1024);
+    fprintf(stdout, "Trace data size: %i (%g KB)\n", tracedata_cnt, (float) (tracedata_cnt * sizeof(uint16_t) / 1024));
+    fprintf(stdout, "Total fragments: %i (%g KB)\n", frag_cnt, (float) (frag_cnt * sizeof(FragmentData) / 1024));
 
     // create 2d array for trace data
     int dim0, dim1;
@@ -322,6 +349,12 @@ int main(int argc, char *argv[]) {
     int current_row_id = 0;          // starting at the first fragment
     uint16_t tracedata_subarr[nrows_sub][dim1];
 
+    // auto chunk if 0x0
+    if (chunk_dims[0] == 0) {
+      chunk_dims[1] = trace_length;
+      chunk_dims[0] = 1000 * 1000 / sizeof(uint16_t) / trace_length;
+    }
+
     // create a new dataset under the defined group, TraceData
     H5::IntType trace_dtype(H5::PredType::NATIVE_SHORT);
     trace_dtype.setOrder(H5T_ORDER_LE);
@@ -330,12 +363,12 @@ int main(int argc, char *argv[]) {
     hsize_t trace_dims[2]; // initial dset shape
     trace_dims[0] = nrows_sub;
     trace_dims[1] = dim1;
-    hsize_t max_trace_dims[2] = {H5S_UNLIMITED, H5S_UNLIMITED};
+    // hsize_t max_trace_dims[2] = {H5S_UNLIMITED, H5S_UNLIMITED};
+    hsize_t max_trace_dims[2] = {(hsize_t) frag_cnt, (hsize_t) trace_length};
     H5::DataSpace trace_dspace(TRACE_DATA_RANK, trace_dims, max_trace_dims);
 
     // modify dataset creation properties, e.g. enable chunking
     H5::DSetCreatPropList cprops;
-    hsize_t chunk_dims[2] = {CHUNK_DIM0, CHUNK_DIM1};
     cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
     // cprops.setDeflate(8);
     cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
@@ -345,6 +378,7 @@ int main(int argc, char *argv[]) {
 
     H5::DataSpace fspace;
     hsize_t size[2];
+    size[0] = 0;
     size[1] = dim1;
     hsize_t offset[2];
     offset[1] = 0;
@@ -352,7 +386,6 @@ int main(int argc, char *argv[]) {
     trace_dims1[1] = dim1;
 
     while (current_row_id < dim0) {
-
         // prep data
         for(int i = 0; i < nrows_sub; i++) {
             for(int j = 0; j < dim1; j++) {
@@ -380,15 +413,9 @@ int main(int argc, char *argv[]) {
         */
 
         trace_dset.write(tracedata_subarr, trace_dtype, trace_dspace, fspace);
+
         current_row_id += nrows_sub;
     }
-
-    delete pfragdata;
-    delete ptracedata;
-    delete dset;
-    delete dspace;
-    delete grp;
-    delete h5file;
 
   } catch (H5::FileIException &error) {
     error.printErrorStack();

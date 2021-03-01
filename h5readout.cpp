@@ -47,7 +47,7 @@ const int NROWS_PER_WRITE = 1;
  */
 void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item,
                   std::vector<FragmentData> *pfragdata,
-                  std::vector<uint16_t> *ptracedata) {
+                  std::vector<uint16_t> *ptracedata, bool verbose) {
   FragmentIndex indexer{static_cast<uint16_t *>(item.getBodyPointer())};
   // int total_fragmts = indexer.getNumberFragments();
 
@@ -62,10 +62,10 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
       .event_id = event_id
     };
 
-    /*
-    fprintf(stdout, "Processing event: %i, fragment: %i, timestamp: %u, headersize: %i\n",
-            event_id, fragment.s_sourceId, fragment.s_timestamp, fragment.s_size);
-    */
+    if (verbose) {
+    fprintf(stdout, "Processing evt-id: %u, frgmt: %u, ts: %u, accu frgmts: %u\n",
+            event_id, fragment.s_sourceId, fragment.s_timestamp, frag_cnt);
+    }
 
     CRingItem *frag_raw = factory.createRingItem(reinterpret_cast<uint8_t *>(fragment.s_itemhdr));
     std::unique_ptr<CPhysicsEventItem> frag_item(dynamic_cast<CPhysicsEventItem *>(frag_raw));
@@ -163,7 +163,8 @@ int main(int argc, char** argv) {
     ("i,input", "URI for input event data", cxxopts::value<std::string>())
     ("o,output", "File path for HDF5 data", cxxopts::value<std::string>())
     ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
-    ("s,chunk-size", "Chunk size mxn for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
+    ("s,chunk-size", "Chunk size MxN for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
+    ("v,verbose", "Show verbose message", cxxopts::value<bool>()->default_value("false"))
     ("h,help", "Print this message")
    ;
   auto result = options.parse(argc, argv);
@@ -184,6 +185,7 @@ int main(int argc, char** argv) {
     chunk_dims[idx++] = i;
     if (ss.peek() == 'x') ss.ignore();
   }
+  bool verbose = result["verbose"].as<bool>();
 
   char fullsource[PATH_MAX + 1];
   if (realpath(ifname.c_str(), fullsource) == nullptr) {
@@ -274,7 +276,7 @@ int main(int argc, char** argv) {
         case PHYSICS_EVENT: { // Physics Event
           // each event data goes to one group named "Event<event_id>" under root
           process_item(event_id++, frag_cnt, dynamic_cast<CPhysicsEventItem &>(*castableItem),
-                       pfragdata, ptracedata);
+                       pfragdata, ptracedata, verbose);
           break;
           }
         case PHYSICS_EVENT_COUNT: { // Physics Event Count

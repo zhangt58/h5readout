@@ -43,7 +43,7 @@ const int NROWS_PER_WRITE = 1;
 
 /**
  * Process ringtime to extract fragment data from physics event.
- * 
+ *
  */
 void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item,
                   std::vector<FragmentData> *pfragdata,
@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
   uint64_t frag_cnt = 0;  // total framgnets count
 
   RunMetaData run_metadata;
-  
+
   try {
     // H5::Exception::dontPrint();
     // create an h5 file handle

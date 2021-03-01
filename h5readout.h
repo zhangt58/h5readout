@@ -18,7 +18,7 @@ typedef struct RunMetaData {
 // runmetadata compound data type
 const std::string META_DATA_RUN_NUMBER("Run_Number");           // uint32_t
 const std::string META_DATA_TITLE("Title");                     // char[80]
-const std::string META_DATA_TIMESTAMP("Posix_Timestamp");       // time_t
+const std::string META_DATA_TIMESTAMP("Timestamp");       // time_t
 const std::string META_DATA_DATETIME("Datetime");               // char[80]
 const std::string META_DATA_TOTAL_EVENTS("Total_Events");       // uint64_t
 const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
@@ -53,7 +53,7 @@ typedef struct FragmentData {
 const std::string FRAGMENT_DATA_CRATE_ID("Crate_ID");                           // uint32_t
 const std::string FRAGMENT_DATA_SLOT_ID("Slot_ID");                             // uint32_t
 const std::string FRAGMENT_DATA_CHANNEL_ID("Channel_ID");                       // uint32_t
-const std::string FRAGMENT_DATA_TIMESTAMP("Timestamp");                         // double
+const std::string FRAGMENT_DATA_TIMESTAMP("Time");                              // double
 const std::string FRAGMENT_DATA_COARSE_TIME("Coarse_Time");                     // uint64_t
 const std::string FRAGMENT_DATA_ENERGY("Energy");                               // uint32_t
 const std::string FRAGMENT_DATA_FINISH_CODE("Finish_Code");                     // uint32_t

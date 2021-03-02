@@ -19,6 +19,7 @@
 #include "cxxopts.hpp" // args parser
 
 // NSCLDAQ imports
+#include <CDataFormatItem.h>
 #include <CDataSource.h>
 #include <CDataSourceFactory.h>
 #include <CErrnoException.h>
@@ -48,11 +49,20 @@ const int NROWS_PER_WRITE = 1;
 void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item,
                   std::vector<FragmentData> *pfragdata,
                   std::vector<uint16_t> *ptracedata, bool verbose) {
-  FragmentIndex indexer{static_cast<uint16_t *>(item.getBodyPointer())};
-  // int total_fragmts = indexer.getNumberFragments();
 
-  CRingItemFactory factory;
-  DDASHitUnpacker unpacker;
+//    if (item.hasBodyHeader()) {
+//        std::cout << "Timestamp: " << item.getEventTimestamp() << "\n"
+//                  << "Source ID: " << item.getSourceId() << std::endl;
+//    }
+    FragmentIndex indexer(
+            static_cast<uint16_t *>(item.getBodyPointer())
+    );
+
+    int total_fragmts = indexer.getNumberFragments();
+//    std::cout << total_fragmts << std::endl;
+
+   CRingItemFactory factory;
+   DDASHitUnpacker unpacker;
 
   // Parse fragments into hits
   for (auto &fragment : indexer) {
@@ -126,26 +136,6 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
     i_fragdata.adc_over_underflow = adc_over_underflow;
     i_fragdata.error_flag = error_flag;
 
-    /*
-    fprintf(stdout, " Get %20s: %i\n", "CrateID"             , crate_id);
-    fprintf(stdout, " Get %20s: %i\n", "SlotID"              , slot_id);
-    fprintf(stdout, " Get %20s: %i\n", "ChannelID"           , channel_id);
-    fprintf(stdout, " Get %20s: %f\n", "Time"                , ts);
-    fprintf(stdout, " Get %20s: %d\n", "CoarseTime"          , ts_coarse);
-    fprintf(stdout, " Get %20s: %i\n", "Energy"              , energy);
-    fprintf(stdout, " Get %20s: %i\n", "FinishCode"          , pileup);
-    fprintf(stdout, " Get %20s: %i\n", "ChannelLength"       , chan_len);
-    fprintf(stdout, " Get %20s: %i\n", "ChannelHeaderLength" , chan_hlen);
-    fprintf(stdout, " Get %20s: %i\n", "Overflow Code"       , overflow_code);
-    fprintf(stdout, " Get %20s: %i\n", "CFDFailBit"          , cfd_fail_bit);
-    fprintf(stdout, " Get %20s: %i\n", "TraceLength"         , trace_len);
-    fprintf(stdout, " Get %20s: %i\n", "ADC Frequency"       , frequency);
-    fprintf(stdout, " Get %20s: %i\n", "HardwareRevision"    , hw_rev);
-    fprintf(stdout, " Get %20s: %i\n", "ADCResolution"       , resolution);
-    fprintf(stdout, " Get %20s: %i\n", "ADCOverflowUnderflow", adc_over_underflow);
-    fprintf(stdout, " Get %20s: %i\n", "Error flag"          , error_flag);
-    */
-
     std::vector<uint16_t> &trace = hit.GetTrace();
     uint16_t *ptr = trace.data();
     for(int i = 0; i < trace_len; i++) {
@@ -161,20 +151,23 @@ int main(int argc, char** argv) {
   cxxopts::Options options("h5readout", "Readout DDAS event data to H5 format.");
   options.add_options()
     ("i,input", "URI for input event data", cxxopts::value<std::string>())
-    ("o,output", "File path for HDF5 data", cxxopts::value<std::string>())
+    ("o,output", "File path for HDF5 data", cxxopts::value<std::string>()->default_value("<input>.h5"))
     ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
     ("s,chunk-size", "Chunk size MxN for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
     ("v,verbose", "Show verbose message", cxxopts::value<bool>()->default_value("false"))
     ("h,help", "Print this message")
    ;
   auto result = options.parse(argc, argv);
-  if (result.count("help") || ! result.count("input") || ! result.count("output")) {
+  if (result.count("help") || ! result.count("input")) {
     std::cout << options.help() << std::endl;
     return EXIT_FAILURE;
   }
 
   std::string ifname = result["input"].as<std::string>();
   std::string ofname = result["output"].as<std::string>();
+  if (ofname == "<input>.h5") {
+    ofname = ifname + ".h5";
+  }
   uint64_t max_evt_cnt = result["events"].as<int>();
   std::string chunk_size = result["chunk-size"].as<std::string>();
   std::stringstream ss(chunk_size);
@@ -189,7 +182,7 @@ int main(int argc, char** argv) {
 
   char fullsource[PATH_MAX + 1];
   if (realpath(ifname.c_str(), fullsource) == nullptr) {
-    fprintf(stderr, "Failed to find the real path for '%s': %s", ifname.c_str(),
+    fprintf(stderr, "Failed to find the real path for '%s': %s\n", ifname.c_str(),
             strerror(errno));
     return EXIT_FAILURE;
   }
@@ -197,10 +190,12 @@ int main(int argc, char** argv) {
   snprintf(uri, sizeof(uri), "file://%s", fullsource);
 
   char outfile[PATH_MAX + 1];
-  if (realpath(ofname.c_str(), outfile) == nullptr) {
-    fprintf(stderr, "Failed to find the real path for '%s': %s", ofname.c_str(),
-            strerror(errno));
-    return EXIT_FAILURE;
+  if (realpath(ofname.c_str(), outfile) != nullptr) {
+    fprintf(stdout, "Warning: Overwrite output file: '%s' ([Y]/n?) ", outfile);
+    char c = getc(stdin);
+    if (c == 'n' || c == 'N') {
+        return 0;
+    }
   }
 
   // Ring Item types that can be sampled
@@ -230,6 +225,74 @@ int main(int argc, char** argv) {
 
   RunMetaData run_metadata;
 
+try {
+  // start to read
+  fprintf(stdout, "Reading data from: %s\n", uri);
+  // readout fragment data
+  while (event_id < max_evt_cnt && (pItem = data_source->getItem())) {
+    std::unique_ptr<CRingItem> item(pItem);
+    std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item));
+
+    switch (castableItem->type()) {
+      case BEGIN_RUN:
+      {
+        CRingStateChangeItem &item2 = dynamic_cast<CRingStateChangeItem &>(*castableItem);
+        run_metadata.number = item2.getRunNumber();
+        strcpy(run_metadata.title, item2.getTitle().c_str());
+        run_metadata.ts = item2.getTimestamp();
+        std::strftime(run_metadata.date, sizeof(run_metadata.date), "%c", std::localtime(&run_metadata.ts));
+        break;
+      }
+      case PHYSICS_EVENT: // Physics Event
+      {
+        // each event data goes to one group named "Event<event_id>" under root
+        CPhysicsEventItem &phyItem = dynamic_cast<CPhysicsEventItem &>(*castableItem);
+        // std::cout << " " << "Process physics event" << std::endl;
+        // std::cout << " " << "BodySize "  << phyItem.getBodySize() << std::endl;
+        // std::cout << " " << "toString " << phyItem.toString() << std::endl;
+
+        process_item(event_id, frag_cnt, phyItem, pfragdata, ptracedata, verbose);
+        break;
+      }
+      case PHYSICS_EVENT_COUNT: // Physics Event Count
+      {
+        // CRingPhysicsEventCountItem &item1 = dynamic_cast<CRingPhysicsEventCountItem &>(*castableItem);
+        // std::cout << "Physics Event Count: " << item1.getEventCount() << std::endl;
+        break;
+      }
+      case RING_FORMAT:
+      {
+        CDataFormatItem &fmtItem = dynamic_cast<CDataFormatItem &>(*castableItem);
+        std::stringstream fmtss;
+        fmtss << fmtItem.getMajor() << "." << fmtItem.getMinor();
+        strcpy(run_metadata.fmt, fmtss.str().c_str());
+        break;
+      }
+      default:
+        break;
+    }
+    ++event_id;
+  }
+
+} catch (std::string &ex) {
+    std::cout << ex << std::endl;
+}
+
+  // update metadata
+  run_metadata.n_frags = frag_cnt;
+  run_metadata.n_events = event_id;
+  std::cout << "Run #: " << run_metadata.number << "\n"
+            << " Title: " << run_metadata.title << "\n"
+            << " Timestamp: " << run_metadata.ts << "\n"
+            << " Datetime: " << run_metadata.date << "\n"
+            << " RingFormat: " << run_metadata.fmt << "\n"
+            << " Read events: " << run_metadata.n_events << "\n"
+            << " Read fragments: " << run_metadata.n_frags
+            << std::endl;
+
+  // start to write
+  fprintf(stdout, "Writing data to: %s\n", outfile);
+
   try {
     // H5::Exception::dontPrint();
     // create an h5 file handle
@@ -257,52 +320,6 @@ int main(int argc, char** argv) {
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,        HOFFSET(FragmentData, adc_resolution),        H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_HW_REVISION,           HOFFSET(FragmentData, hardware_revision),     H5::PredType::NATIVE_INT);
 
-    // start to read
-    fprintf(stdout, "Reading data from: %s\n", uri);
-    // readout fragment data
-    while (event_id < max_evt_cnt && (pItem = data_source->getItem())) {
-      std::unique_ptr<CRingItem> item(pItem);
-      std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item));
-
-      switch (castableItem->type()) {
-        case BEGIN_RUN: {
-          CRingStateChangeItem &item2 = dynamic_cast<CRingStateChangeItem &>(*castableItem);
-          run_metadata.number = item2.getRunNumber();
-          strcpy(run_metadata.title, item2.getTitle().c_str());
-          run_metadata.ts = item2.getTimestamp();
-          std::strftime(run_metadata.date, sizeof(run_metadata.date), "%c", std::localtime(&run_metadata.ts));
-          break;
-        }
-        case PHYSICS_EVENT: { // Physics Event
-          // each event data goes to one group named "Event<event_id>" under root
-          process_item(event_id++, frag_cnt, dynamic_cast<CPhysicsEventItem &>(*castableItem),
-                       pfragdata, ptracedata, verbose);
-          break;
-          }
-        case PHYSICS_EVENT_COUNT: { // Physics Event Count
-          // CRingPhysicsEventCountItem &item1 = dynamic_cast<CRingPhysicsEventCountItem &>(*castableItem);
-          // std::cout << "Physics Event Count: " << item1.getEventCount() << std::endl;
-          break;
-          }
-        default:
-          break;
-      }
-    }
-
-    // update metadata
-    run_metadata.n_frags = frag_cnt;
-    run_metadata.n_events = event_id;
-    std::cout << "Run #: " << run_metadata.number << "\n"
-              << " Title: " << run_metadata.title << "\n"
-              << " Timestamp: " << run_metadata.ts << "\n"
-              << " Datetime: " << run_metadata.date << "\n"
-              << " Read events: " << run_metadata.n_events << "\n"
-              << " Read fragments: " << run_metadata.n_frags
-              << std::endl;
-
-    // start to write
-    fprintf(stdout, "Writing data to: %s\n", outfile);
-
     // create a new group "PhysicsEvent"
     auto *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
 
@@ -320,6 +337,12 @@ int main(int argc, char** argv) {
     // date
     auto attr_date = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME, stype, H5::DataSpace(H5S_SCALAR)));
     attr_date->write(stype, run_metadata.date);
+    // ring format
+    // H5::StrType stype(H5::PredType::C_S1, 6);
+    auto attr_fmt = new H5::Attribute(grp->createAttribute(META_DATA_RING_FORMAT,
+                                      H5::StrType(H5::PredType::C_S1, 6),
+                                      H5::DataSpace(H5S_SCALAR)));
+    attr_fmt->write(stype, run_metadata.fmt);
     // total events
     auto attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS, H5::PredType::NATIVE_LONG, H5::DataSpace(H5S_SCALAR)));
     attr_n_events->write(H5::PredType::NATIVE_LONG, &run_metadata.n_events);
@@ -435,6 +458,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Failed to read and export event stream to HDF5.\n");
     return EXIT_FAILURE;
   }
+
   fprintf(stdout, "Read and write %i fragments in %i events in total.\n", frag_cnt, event_id);
   return EXIT_SUCCESS;
 }

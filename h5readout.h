@@ -11,6 +11,7 @@ typedef struct RunMetaData {
   char title[80];     // title
   time_t ts;          // posix timestamp
   char date[80];      // datetime from ts
+  char fmt[6];      // ring format
   uint64_t n_events;  // total events
   uint64_t n_frags;   // total fragments
 } RunMetaData;
@@ -18,10 +19,11 @@ typedef struct RunMetaData {
 // runmetadata compound data type
 const std::string META_DATA_RUN_NUMBER("Run_Number");           // uint32_t
 const std::string META_DATA_TITLE("Title");                     // char[80]
-const std::string META_DATA_TIMESTAMP("Timestamp");       // time_t
+const std::string META_DATA_TIMESTAMP("Timestamp");             // time_t
 const std::string META_DATA_DATETIME("Datetime");               // char[80]
 const std::string META_DATA_TOTAL_EVENTS("Total_Events");       // uint64_t
 const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
+const std::string META_DATA_RING_FORMAT("Ring_Format");         // char[6]
 
 
 // type for physics fragment data

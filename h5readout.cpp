@@ -42,6 +42,9 @@ using namespace DAQ::DDAS;
 // rows of trace data written at once.
 const int NROWS_PER_WRITE = 1;
 
+// version
+const std::string VERSION = "1.0";
+
 /**
  * Process ringtime to extract fragment data from physics event.
  *
@@ -155,9 +158,15 @@ int main(int argc, char** argv) {
     ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
     ("s,chunk-size", "Chunk size MxN for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
     ("v,verbose", "Show verbose message", cxxopts::value<bool>()->default_value("false"))
+    ("version", "Show version info", cxxopts::value<bool>())
     ("h,help", "Print this message")
    ;
   auto result = options.parse(argc, argv);
+  if (result.count("version")) {
+    std::cout << "Version: " << VERSION << std::endl;
+    return 0;
+  }
+
   if (result.count("help") || ! result.count("input")) {
     std::cout << options.help() << std::endl;
     return EXIT_FAILURE;

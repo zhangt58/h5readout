@@ -1,17 +1,28 @@
 EXEC = h5readout
 CC = g++
 OBJ = $(EXEC).o
-INC = -I/opt/nscldaq/include
-INC += -I/opt/ddas/include
-INC += -I/usr/include/hdf5/serial
-INC += -I../cs/cpp/cxxopts/include
-LIBS = -lhdf5 -lhdf5_cpp -L/usr/lib/x86_64-linux-gnu/hdf5/serial
-LIBS += -ldataformat -ldaqio -ldaqshm -lPortManager -lurl -lFragmentIndex -L/opt/nscldaq/lib
-LIBS += -lddasformat -L/opt/ddas/lib
-LIBS += -lException -L/opt/libtclplus/lib
-LDFLAGS = -Wl,-rpath /opt/nscldaq/lib
-LDFLAGS += -Wl,-rpath /opt/ddas/lib
-LDFLAGS += -Wl,-rpath /opt/libtclplus/lib
+# spdaq22
+# DAQPATH=/usr/opt/daq/experimental/11.3-018
+# DDASPATH=/usr/opt/ddas/3.4-002
+# HDF5PATH=./hdf5-104
+# CXXOPTPATH=./cxxopt_dd45a08/include
+#
+DAQPATH=/opt/nscldaq
+DDASPATH=/opt/ddas
+HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+CXXOPTPATH=./cxxopts
+
+INC = -I$(DAQPATH)/include
+INC += -I$(DDASPATH)/include
+INC += -I$(HDF5PATH)/include
+INC += -I$(CXXOPTPATH)/include
+LIBS = -lhdf5 -lhdf5_cpp -L$(HDF5PATH)/lib
+LIBS += -ldataformat -ldaqio -ldaqshm -lPortManager -lurl -lFragmentIndex -L$(DAQPATH)/lib
+LIBS += -lddasformat -L$(DDASPATH)/lib
+LIBS += -lException -L$(DAQPATH)/lib
+LDFLAGS = -Wl,-rpath $(DAQPATH)/lib
+LDFLAGS += -Wl,-rpath $(DDASPATH)/lib
+LDFLAGS += -Wl,-rpath $(HDF5PATH)/lib
 CXXFLAGS = -O2 -std=c++11
 
 all: $(EXEC)

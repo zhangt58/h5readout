@@ -157,6 +157,8 @@ int main(int argc, char** argv) {
     ("o,output", "File path for HDF5 data", cxxopts::value<std::string>()->default_value("<input>.h5"))
     ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
     ("s,chunk-size", "Chunk size MxN for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
+    ("c,compress", "Compression method, 'szip' or 'gzip'", cxxopts::value<std::string>()->default_value("gzip"))
+    ("compress-level", "GZip Compression level(0-9)", cxxopts::value<int>()->default_value("8"))
     ("v,verbose", "Show verbose message", cxxopts::value<bool>()->default_value("false"))
     ("version", "Show version info", cxxopts::value<bool>())
     ("h,help", "Print this message")
@@ -171,6 +173,9 @@ int main(int argc, char** argv) {
     std::cout << options.help() << std::endl;
     return EXIT_FAILURE;
   }
+
+  int gfactor = result["compress-level"].as<int>();
+  std::string comp_meth = result["compress"].as<std::string>();
 
   std::string ifname = result["input"].as<std::string>();
   std::string ofname = result["output"].as<std::string>();
@@ -404,8 +409,12 @@ try {
     // modify dataset creation properties, e.g. enable chunking
     H5::DSetCreatPropList cprops;
     cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
-    // cprops.setDeflate(8);
-    cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
+
+    if (comp_meth == "szip") {
+        cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
+    } else if (comp_meth == "gzip") {
+        cprops.setDeflate(gfactor);
+    }
 
     // create Traces dataset
     H5::DataSet trace_dset = grp->createDataSet(TRACES_DSET_NAME, trace_dtype, trace_dspace, cprops);

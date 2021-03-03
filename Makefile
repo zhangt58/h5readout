@@ -1,15 +1,22 @@
 EXEC = h5readout
 CC = g++
 OBJ = $(EXEC).o
-# spdaq22
+#
+#spdaq22: Debian 8
 # DAQPATH=/usr/opt/daq/experimental/11.3-018
 # DDASPATH=/usr/opt/ddas/3.4-002
 # HDF5PATH=./hdf5-104
-# CXXOPTPATH=./cxxopt_dd45a08/include
 #
+#flagtail: Debian 10
+# DAQPATH=/usr/opt/opt-buster/daq/11.3-018
+# DDASPATH=/usr/opt/opt-buster/ddas/3.4-002
+# HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+#
+#my vmphy0: Debian 10
 DAQPATH=/opt/nscldaq
 DDASPATH=/opt/ddas
 HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+
 CXXOPTPATH=./cxxopts
 
 INC = -I$(DAQPATH)/include
@@ -67,3 +74,6 @@ run226:
 	./h5readout -i ../../nscl_data/run-0226-00.evt
 run227:
 	./h5readout -i ../../nscl_data/run-0227-00.evt
+
+pack:
+    tar cjvf h5readout-app_1.1.tar.bz2 h5readout hdf5-104

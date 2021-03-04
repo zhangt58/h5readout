@@ -13,8 +13,8 @@ OBJ = $(EXEC).o
 # HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
 #
 #my vmphy0: Debian 10
-DAQPATH=/opt/nscldaq
-DDASPATH=/opt/ddas
+DAQPATH=/usr/lib/nscldaq
+DDASPATH=/usr/lib/opt/ddas
 HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
 
 CXXOPTPATH=./cxxopts
@@ -24,6 +24,7 @@ INC += -I$(DDASPATH)/include
 INC += -I$(HDF5PATH)/include
 INC += -I$(CXXOPTPATH)/include
 LIBS = -lhdf5 -lhdf5_cpp -L$(HDF5PATH)/lib
+LIBS += -lDataFlow -ldaqthreads
 LIBS += -ldataformat -ldaqio -ldaqshm -lPortManager -lurl -lFragmentIndex -L$(DAQPATH)/lib
 LIBS += -lddasformat -L$(DDASPATH)/lib
 LIBS += -lException -L$(DAQPATH)/lib

@@ -76,4 +76,4 @@ run227:
 	./h5readout -i ../../nscl_data/run-0227-00.evt
 
 pack:
-    tar cjvf h5readout-app_1.1.tar.bz2 h5readout hdf5-104
+	tar cjvf h5readout-app_1.1.tar.bz2 h5readout hdf5-104

@@ -339,29 +339,47 @@ try {
 
     // meta data
     // run number
-    auto attr_run_number = new H5::Attribute(grp->createAttribute(META_DATA_RUN_NUMBER, H5::PredType::NATIVE_INT, H5::DataSpace(H5S_SCALAR)));
+    auto attr_run_number = new H5::Attribute(grp->createAttribute(META_DATA_RUN_NUMBER,
+                                             H5::PredType::NATIVE_INT,
+                                             H5::DataSpace(H5S_SCALAR)));
     attr_run_number->write(H5::PredType::NATIVE_INT, &run_metadata.number);
+
     // title
     H5::StrType stype(H5::PredType::C_S1, 80);
-    auto attr_title = new H5::Attribute(grp->createAttribute(META_DATA_TITLE, stype, H5::DataSpace(H5S_SCALAR)));
+    auto attr_title = new H5::Attribute(grp->createAttribute(META_DATA_TITLE,
+                                        stype,
+                                        H5::DataSpace(H5S_SCALAR)));
     attr_title->write(stype, run_metadata.title);
+
     // ts
-    auto attr_ts = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP, H5::PredType::NATIVE_INT, H5::DataSpace(H5S_SCALAR)));
+    auto attr_ts = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP,
+                                     H5::PredType::NATIVE_INT,
+                                     H5::DataSpace(H5S_SCALAR)));
     attr_ts->write(H5::PredType::NATIVE_INT, &run_metadata.ts);
+
     // date
-    auto attr_date = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME, stype, H5::DataSpace(H5S_SCALAR)));
+    auto attr_date = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME,
+                                       stype,
+                                       H5::DataSpace(H5S_SCALAR)));
     attr_date->write(stype, run_metadata.date);
+
     // ring format
-    // H5::StrType stype(H5::PredType::C_S1, 6);
+    H5::StrType stype1(H5::PredType::C_S1, 6);
     auto attr_fmt = new H5::Attribute(grp->createAttribute(META_DATA_RING_FORMAT,
-                                      H5::StrType(H5::PredType::C_S1, 6),
+                                      stype1,
                                       H5::DataSpace(H5S_SCALAR)));
-    attr_fmt->write(stype, run_metadata.fmt);
+    attr_fmt->write(stype1, run_metadata.fmt);
+
     // total events
-    auto attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS, H5::PredType::NATIVE_LONG, H5::DataSpace(H5S_SCALAR)));
+    auto attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS,
+                                           H5::PredType::NATIVE_LONG,
+                                           H5::DataSpace(H5S_SCALAR)));
     attr_n_events->write(H5::PredType::NATIVE_LONG, &run_metadata.n_events);
+
     // total fragments
-    auto attr_n_frags = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_FRAGMENTS, H5::PredType::NATIVE_LONG, H5::DataSpace(H5S_SCALAR)));
+    auto attr_n_frags = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_FRAGMENTS,
+                                          H5::PredType::NATIVE_LONG,
+                                          H5::DataSpace(H5S_SCALAR)));
     attr_n_frags->write(H5::PredType::NATIVE_LONG, &run_metadata.n_frags);
 
     // create a dataspace for fragments data

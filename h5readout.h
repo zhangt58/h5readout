@@ -1,9 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 
 #include "H5Cpp.h"
+
+// version
+const std::string VERSION = "1.3";
 
 // type for run meta
 typedef struct RunMetaData {
@@ -93,3 +99,21 @@ data structure:
    Fragments (dataset)
    Traces (dataset)
 */
+
+/*
+ * Return if a path is a exsiting directory.
+ */
+bool is_dir(char *path) {
+    struct stat sb = {};
+    stat(path, &sb);
+    return (sb.st_mode & S_IFMT) == S_IFDIR;
+}
+
+/*
+ * Return if a path is a exsiting file.
+ */
+bool is_file(char *path) {
+    struct stat sb = {};
+    stat(path, &sb);
+    return (sb.st_mode & S_IFMT) == S_IFREG;
+}

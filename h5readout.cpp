@@ -42,9 +42,6 @@ using namespace DAQ::DDAS;
 // rows of trace data written at once.
 const int NROWS_PER_WRITE = 1;
 
-// version
-const std::string VERSION = "1.2";
-
 /**
  * Process ringtime to extract fragment data from physics event.
  *
@@ -151,10 +148,10 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
 
 int main(int argc, char** argv) {
 
-  cxxopts::Options options("h5readout", "Readout DDAS event data to H5 format.");
+  cxxopts::Options options("h5readout", "Readout DDAS event data to HDF5 format.");
   options.add_options()
     ("i,input", "URI for input event data", cxxopts::value<std::string>())
-    ("o,output", "File path for HDF5 data", cxxopts::value<std::string>()->default_value("<input>.h5"))
+    ("o,output", "File path for HDF5 data, if assigned with a valid directory, apply default filename under that directory", cxxopts::value<std::string>()->default_value("<input>.h5"))
     ("n,events", "Number of events to readout", cxxopts::value<int>()->default_value(std::to_string(INT_MAX)))
     ("s,chunk-size", "Chunk size MxN for HDF5 data", cxxopts::value<std::string>()->default_value("0x0"))
     ("c,compress", "Compression method, 'szip' or 'gzip'", cxxopts::value<std::string>()->default_value("gzip"))
@@ -195,20 +192,37 @@ int main(int argc, char** argv) {
   bool verbose = result["verbose"].as<bool>();
 
   char fullsource[PATH_MAX + 1];
+  char copy_ifname[PATH_MAX + 1];
   if (realpath(ifname.c_str(), fullsource) == nullptr) {
     fprintf(stderr, "Failed to find the real path for '%s': %s\n", ifname.c_str(),
             strerror(errno));
     return EXIT_FAILURE;
   }
+  strcpy(copy_ifname, fullsource);
+  char *basename_ifname = basename(copy_ifname);
+
   char uri[PATH_MAX + 8];
   snprintf(uri, sizeof(uri), "file://%s", fullsource);
 
+  char outfile1[PATH_MAX + 1];
   char outfile[PATH_MAX + 1];
-  if (realpath(ofname.c_str(), outfile) != nullptr) {
+  if (realpath(ofname.c_str(), outfile1) != nullptr) {
+    // existing filepath
+    if (is_file(outfile1)) {
+      strcpy(outfile, outfile1);
+    } else if (is_dir(outfile1)) {
+      // output is a valid directory, auto out filename
+      snprintf(outfile, sizeof(outfile), "%s/%s.h5", outfile1, basename_ifname);
+    } else {
+      strcpy(outfile, outfile1);
+    }
+  }
+  // give warning if to overwrite existing file.
+  if (is_file(outfile)) {
     fprintf(stdout, "Warning: Overwrite output file: '%s' ([Y]/n?) ", outfile);
     char c = getc(stdin);
     if (c == 'n' || c == 'N') {
-        return 0;
+      return 0;
     }
   }
 

@@ -107,11 +107,11 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
     uint32_t pileup = static_cast<uint32_t>(hit.GetFinishCode());
     i_fragdata.finish_code = pileup;
 
-    uint32_t chan_len = static_cast<uint32_t>(hit.GetChannelLength());
-    i_fragdata.channel_length = chan_len;
+    // uint32_t chan_len = static_cast<uint32_t>(hit.GetChannelLength());
+    // i_fragdata.channel_length = chan_len;
 
-    uint32_t chan_hlen = static_cast<uint32_t>(hit.GetChannelLengthHeader());
-    i_fragdata.channel_header_length = chan_hlen;
+    // uint32_t chan_hlen = static_cast<uint32_t>(hit.GetChannelLengthHeader());
+    // i_fragdata.channel_header_length = chan_hlen;
 
     uint32_t overflow_code = static_cast<uint32_t>(hit.GetOverflowCode());
     i_fragdata.overflow_code = overflow_code;
@@ -125,16 +125,16 @@ void process_item(uint64_t event_id, uint64_t &frag_cnt, CPhysicsEventItem &item
     uint32_t frequency = static_cast<uint32_t>(hit.GetModMSPS());
     i_fragdata.adc_frequency = frequency;
 
-    uint32_t hw_rev = static_cast<uint32_t>(hit.GetHardwareRevision());
-    i_fragdata.hardware_revision = hw_rev;
+    // uint32_t hw_rev = static_cast<uint32_t>(hit.GetHardwareRevision());
+    // i_fragdata.hardware_revision = hw_rev;
 
     uint32_t resolution = static_cast<uint32_t>(hit.GetADCResolution());
     i_fragdata.adc_resolution = resolution;
 
     uint16_t adc_over_underflow = static_cast<uint16_t>(hit.GetADCOverflowUnderflow());
-    uint16_t error_flag = (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
+    // uint16_t error_flag = (adc_over_underflow << 2) | (pileup << 1) | (cfd_fail_bit << 0);
     i_fragdata.adc_over_underflow = adc_over_underflow;
-    i_fragdata.error_flag = error_flag;
+    // i_fragdata.error_flag = error_flag;
 
     std::vector<uint16_t> &trace = hit.GetTrace();
     uint16_t *ptr = trace.data();
@@ -168,6 +168,7 @@ int main(int argc, char** argv) {
 
   if (result.count("help") || ! result.count("input")) {
     std::cout << options.help() << std::endl;
+    print_examples();
     return EXIT_FAILURE;
   }
 
@@ -216,6 +217,9 @@ int main(int argc, char** argv) {
     } else {
       strcpy(outfile, outfile1);
     }
+  } else {
+    // non-existing filepath
+    strcpy(outfile, outfile1);
   }
   // give warning if to overwrite existing file.
   if (is_file(outfile)) {
@@ -337,16 +341,16 @@ try {
     frag_dtype.insertMember(FRAGMENT_DATA_CRATE_ID,              HOFFSET(FragmentData, crate_id),              H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_SLOT_ID,               HOFFSET(FragmentData, slot_id),               H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_ID,            HOFFSET(FragmentData, channel_id),            H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_LENGTH,        HOFFSET(FragmentData, channel_length),        H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_HEADER_LENGTH, HOFFSET(FragmentData, channel_header_length), H5::PredType::NATIVE_INT);
+//    frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_LENGTH,        HOFFSET(FragmentData, channel_length),        H5::PredType::NATIVE_INT);
+//    frag_dtype.insertMember(FRAGMENT_DATA_CHANNEL_HEADER_LENGTH, HOFFSET(FragmentData, channel_header_length), H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_FINISH_CODE,           HOFFSET(FragmentData, finish_code),           H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_OVER_UNDER_FLOW,   HOFFSET(FragmentData, adc_over_underflow),    H5::PredType::NATIVE_SHORT);
     frag_dtype.insertMember(FRAGMENT_DATA_CFD_FAIL_BIT,          HOFFSET(FragmentData, cfd_fail_bit),          H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_OVERFLOW_CODE,         HOFFSET(FragmentData, overflow_code),         H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_ERROR_FLAG,            HOFFSET(FragmentData, error_flag),            H5::PredType::NATIVE_SHORT);
+//    frag_dtype.insertMember(FRAGMENT_DATA_ERROR_FLAG,            HOFFSET(FragmentData, error_flag),            H5::PredType::NATIVE_SHORT);
     frag_dtype.insertMember(FRAGMENT_DATA_MODMSPS,               HOFFSET(FragmentData, adc_frequency),         H5::PredType::NATIVE_INT);
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,        HOFFSET(FragmentData, adc_resolution),        H5::PredType::NATIVE_INT);
-    frag_dtype.insertMember(FRAGMENT_DATA_HW_REVISION,           HOFFSET(FragmentData, hardware_revision),     H5::PredType::NATIVE_INT);
+//    frag_dtype.insertMember(FRAGMENT_DATA_HW_REVISION,           HOFFSET(FragmentData, hardware_revision),     H5::PredType::NATIVE_INT);
 
     // create a new group "PhysicsEvent"
     auto *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));

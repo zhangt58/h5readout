@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+#include <iostream>
 
 #include "H5Cpp.h"
 
@@ -43,16 +44,16 @@ typedef struct FragmentData {
   uint64_t coarse_time;
   uint32_t energy;
   uint32_t finish_code;
-  uint32_t channel_length;
-  uint32_t channel_header_length;
+  // uint32_t channel_length;
+  // uint32_t channel_header_length;
   uint32_t overflow_code;
   uint32_t cfd_fail_bit;
   uint32_t trace_length;
   uint32_t adc_frequency;
-  uint32_t hardware_revision;
+  // uint32_t hardware_revision;
   uint32_t adc_resolution;
   uint16_t adc_over_underflow;
-  uint16_t error_flag;
+  // uint16_t error_flag;
 } FragmentData;
 
 // fragmentdata H5 compound data type
@@ -64,21 +65,21 @@ const std::string FRAGMENT_DATA_CHANNEL_ID("Channel_ID");                       
 const std::string FRAGMENT_DATA_TIMESTAMP("Time");                              // double
 const std::string FRAGMENT_DATA_COARSE_TIME("Coarse_Time");                     // uint64_t
 const std::string FRAGMENT_DATA_ENERGY("Energy");                               // uint32_t
-const std::string FRAGMENT_DATA_FINISH_CODE("Finish_Code");                     // uint32_t
-const std::string FRAGMENT_DATA_CHANNEL_LENGTH("Channel_Length");               // uint32_t
-const std::string FRAGMENT_DATA_CHANNEL_HEADER_LENGTH("Channel_Header_Length"); // uint32_t
+const std::string FRAGMENT_DATA_FINISH_CODE("Err_Pileup");                     // uint32_t
+// const std::string FRAGMENT_DATA_CHANNEL_LENGTH("Channel_Length");               // uint32_t
+// const std::string FRAGMENT_DATA_CHANNEL_HEADER_LENGTH("Channel_Header_Length"); // uint32_t
 const std::string FRAGMENT_DATA_OVERFLOW_CODE("Overflow_Code");                 // uint32_t
-const std::string FRAGMENT_DATA_CFD_FAIL_BIT("CFD_Fail_Bit");                   // uint32_t
+const std::string FRAGMENT_DATA_CFD_FAIL_BIT("Err_CFD_Fail");                   // uint32_t
 const std::string FRAGMENT_DATA_TRACE_LENGTH("Trace_Length");                   // uint32_t
 const std::string FRAGMENT_DATA_MODMSPS("ADC_Frequency");                       // uint32_t
-const std::string FRAGMENT_DATA_HW_REVISION("Hardware_Revision");               // uint32_t
+// const std::string FRAGMENT_DATA_HW_REVISION("Hardware_Revision");               // uint32_t
 const std::string FRAGMENT_DATA_ADC_RESOLUTION("ADC_Resolution");               // uint32_t
-const std::string FRAGMENT_DATA_ADC_OVER_UNDER_FLOW("ADC_Over/Underflow");      // uint16_t
+const std::string FRAGMENT_DATA_ADC_OVER_UNDER_FLOW("Err_ADC_Saturation");      // uint16_t
 
 // others, including post-processed parameters
 const std::string FRAGMENT_DATA_FRAGMENT_ID("Fragment_ID");                     // uint64_t
 const std::string FRAGMENT_DATA_EVENT_ID("Event_ID");                           // uint64_t
-const std::string FRAGMENT_DATA_ERROR_FLAG("Error_Flag");                       // uint16_t
+// const std::string FRAGMENT_DATA_ERROR_FLAG("Error_Flag");                       // uint16_t
 
 // group name
 const std::string PHYSICS_EVENT_GROUP_NAME("DDAS_Data");
@@ -116,4 +117,20 @@ bool is_file(char *path) {
     struct stat sb = {};
     stat(path, &sb);
     return (sb.st_mode & S_IFMT) == S_IFREG;
+}
+
+/*
+ * Print out examples of using h5readout.
+ */
+void print_examples() {
+    std::cout << "Examples:" << "\n"
+              << "  # Default output h5 filepath:\n"
+              << "  h5readout -i /home/devuser/data.evt # output /home/devuser/data.h5\n"
+              << "  # Default output h5 filepath, to a directory:\n"
+              << "  h5readout -i /home/devuser/data.evt -o /home/devuser/h5data\n"
+              << "  # Output h5 file w/o compression:\n"
+              << "  h5readout -i /home/devuser/data.evt -c none\n"
+              << "  # Output h5 file w/ szip compression:\n"
+              << "  h5readout -i /home/devuser/data.evt -c szip"
+              << std::endl;
 }

@@ -10,7 +10,7 @@
 #include "H5Cpp.h"
 
 // version
-const std::string VERSION = "1.3";
+const std::string VERSION = "1.4";
 
 // type for run meta
 typedef struct RunMetaData {

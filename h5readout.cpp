@@ -156,11 +156,12 @@ std::string ArgumentParser::get_output_filepath() {
 }
 
 void ArgumentParser::print_all_args() {
+    hsize_t* pdim = get_chunk_dims();
     std::cout << "Input data source: " << get_input_data_source() << "\n"
               << "Input data source (URI): " << get_input_data_source_as_uri() << "\n"
               << "Output data path: " << get_output_filepath() << "\n"
               << "Max events: " << get_max_evt() << "\n"
-//              << "Chunk dims: " << get_chunk_dims[0] << "x" << get_chunk_dims[1] << "\n"
+              << "Chunk dims: " << pdim[0] << "x" << pdim[1] << "\n"
               << "Compress method: " << get_compress_method() << "\n"
               << "Gzip compress level: " << get_gzip_compress_level() << "\n"
               << "Verbose on? : "  << is_verbose() << "\n"

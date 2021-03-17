@@ -132,7 +132,7 @@ class ArgumentParser {
         // compress method
         std::string get_compress_method();
 
-        // chunk size
+        // chunk size, pointer
         hsize_t* get_chunk_dims();
 
         // max evt number

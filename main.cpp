@@ -1,6 +1,8 @@
 #include <cstring>
+#include <ctime>
 
 #include <iostream>
+#include <algorithm>
 
 #include <CDataSource.h>
 #include <CDataSourceFactory.h>
@@ -314,79 +316,128 @@ int main(int argc, char **argv) {
         current_row_id += nrows_sub;
     }
 
+    // create mem data type for ScalerData
+    const H5::CompType ddas_scaler_dtype(sizeof(DDASScalerData));
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_TIMESTAMP, HOFFSET(DDASScalerData, timestamp),    H5::PredType::NATIVE_LONG);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_DATETIME,  HOFFSET(DDASScalerData, datetime),     H5::StrType(H5::PredType::C_S1, 80));
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_CRATE_ID,  HOFFSET(DDASScalerData, crate_id),     H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_SLOT_ID,   HOFFSET(DDASScalerData, slot_id),      H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH00,  HOFFSET(DDASScalerData, inc_raw_ch00), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH00,  HOFFSET(DDASScalerData, inc_val_ch00), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH01,  HOFFSET(DDASScalerData, inc_raw_ch01), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH01,  HOFFSET(DDASScalerData, inc_val_ch01), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH02,  HOFFSET(DDASScalerData, inc_raw_ch02), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH02,  HOFFSET(DDASScalerData, inc_val_ch02), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH03,  HOFFSET(DDASScalerData, inc_raw_ch03), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH03,  HOFFSET(DDASScalerData, inc_val_ch03), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH04,  HOFFSET(DDASScalerData, inc_raw_ch04), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH04,  HOFFSET(DDASScalerData, inc_val_ch04), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH05,  HOFFSET(DDASScalerData, inc_raw_ch05), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH05,  HOFFSET(DDASScalerData, inc_val_ch05), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH06,  HOFFSET(DDASScalerData, inc_raw_ch06), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH06,  HOFFSET(DDASScalerData, inc_val_ch06), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH07,  HOFFSET(DDASScalerData, inc_raw_ch07), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH07,  HOFFSET(DDASScalerData, inc_val_ch07), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH08,  HOFFSET(DDASScalerData, inc_raw_ch08), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH08,  HOFFSET(DDASScalerData, inc_val_ch08), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH09,  HOFFSET(DDASScalerData, inc_raw_ch09), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH09,  HOFFSET(DDASScalerData, inc_val_ch09), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH10,  HOFFSET(DDASScalerData, inc_raw_ch10), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH10,  HOFFSET(DDASScalerData, inc_val_ch10), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH11,  HOFFSET(DDASScalerData, inc_raw_ch11), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH11,  HOFFSET(DDASScalerData, inc_val_ch11), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH12,  HOFFSET(DDASScalerData, inc_raw_ch12), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH12,  HOFFSET(DDASScalerData, inc_val_ch12), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH13,  HOFFSET(DDASScalerData, inc_raw_ch13), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH13,  HOFFSET(DDASScalerData, inc_val_ch13), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH14,  HOFFSET(DDASScalerData, inc_raw_ch14), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH14,  HOFFSET(DDASScalerData, inc_val_ch14), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_RAW_CH15,  HOFFSET(DDASScalerData, inc_raw_ch15), H5::PredType::NATIVE_INT);
+    ddas_scaler_dtype.insertMember(DDAS_SCALER_VAL_CH15,  HOFFSET(DDASScalerData, inc_val_ch15), H5::PredType::NATIVE_INT);
+
+
     // create 2d array for scaler data
-    int s_dim0 = pscalerts->size(), s_dim1 = (*pscalerlen)[0] + 1; // assume all scaler of the same length
-    int s_nrows_sub = S_NROWS_PER_WRITE;                 //  |
-    int s_current_row_id = 0;                            //  |
-    uint32_t scalerdata_subarr[s_nrows_sub][s_dim1];     //  -> put first element with timestamp
+    int s_dim0 = pscalerts->size(), s_dim1 = (*pscalerlen)[0]; // assume all scaler of the same length
+    uint32_t max_slot_num = 1 + s_dim1 / 33;  // max slot number
+    uint32_t slot_num = 2;                    // first slot number
+    time_t ts_tmp;
+    char date_tmp[80];
+    int ind0;
 
-    // apply chunk-dims of tracedata
-    chunk_dims[1] = s_dim1;
-    chunk_dims[0] = 1024 / sizeof(uint32_t) / s_dim1; // 1KB
-
-    std::cout << s_dim0 << " " << s_dim1 << std::endl;
-    std::cout << chunk_dims[0] << "x" << chunk_dims[1] << std::endl;
-
-    // create a new dataset under the defined group, Scalers
-    H5::IntType scaler_dtype(H5::PredType::NATIVE_INT);
-    scaler_dtype.setOrder(H5T_ORDER_LE);
-
-    // extensible dataset for scalers
-    hsize_t scaler_dims[2]; // initial dset shape
-    scaler_dims[0] = s_nrows_sub;
-    scaler_dims[1] = s_dim1;
-    // hsize_t max_trace_dims[2] = {H5S_UNLIMITED, H5S_UNLIMITED};
-    hsize_t max_scaler_dims[2] = {(hsize_t) s_dim0, (hsize_t) s_dim1};
-    H5::DataSpace scaler_dspace(SCALER_DATA_RANK, scaler_dims, max_scaler_dims);
-
-    // modify dataset creation properties, e.g. enable chunking
-    H5::DSetCreatPropList s_cprops;
-    s_cprops.setChunk(SCALER_DATA_RANK, chunk_dims);
-
-    if (comp_meth == "szip") {
-        s_cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
-    } else if (comp_meth == "gzip") {
-        s_cprops.setDeflate(gfactor);
-    }
-
-    // create scalers dataset
-    H5::DataSet scaler_dset = grp->createDataSet(SCALERS_DSET_NAME, scaler_dtype, scaler_dspace, s_cprops);
-
-    H5::DataSpace s_fspace;
-    hsize_t s_size[2];
-    s_size[0] = 0;
-    s_size[1] = s_dim1;
-    hsize_t s_offset[2];
-    s_offset[1] = 0;
-    hsize_t scaler_dims1[2];
-    scaler_dims1[1] = s_dim1;
-
-    while (s_current_row_id < s_dim0) {
-        // prep data
-        for(int i = 0; i < s_nrows_sub; i++) {
-            // scalerdata_subarr[i][0] = (uint32_t) ((*pscalerts) [i]);
-            scalerdata_subarr[i][0] = 0;
-            for(int j = 0; j < s_dim1 - 1; j++) {
-                scalerdata_subarr[i][j+1] = (*pscalerdata) [(i + s_current_row_id) * (s_dim1 - 1) + j];
-            }
+    // process scalerdata
+    std::vector<DDASScalerData> *pddasscaler = new std::vector<DDASScalerData>();
+    for(int i = 0; i < s_dim0; i++) {
+        ts_tmp = (*pscalerts) [i];
+        std::strftime(date_tmp, sizeof(date_tmp), "%c", std::localtime(&ts_tmp));
+        slot_num = 2;
+        while (slot_num <= max_slot_num) {
+            // create a new DDASScalerData every 33, 33, ...
+            // crate_id + 16 * 2 channel readings
+            DDASScalerData i_ddas_scaler_data {
+                .timestamp = ts_tmp,
+                .slot_id = slot_num
+            };
+            strcpy(i_ddas_scaler_data.datetime, date_tmp);
+            ind0 = (slot_num - 2) * 33 + i * s_dim1;
+            i_ddas_scaler_data.crate_id = (*pscalerdata)[ind0];
+            i_ddas_scaler_data.inc_raw_ch00 = (*pscalerdata)[ind0 + 1];
+            i_ddas_scaler_data.inc_val_ch00 = (*pscalerdata)[ind0 + 2];
+            i_ddas_scaler_data.inc_raw_ch01 = (*pscalerdata)[ind0 + 3];
+            i_ddas_scaler_data.inc_val_ch01 = (*pscalerdata)[ind0 + 4];
+            i_ddas_scaler_data.inc_raw_ch02 = (*pscalerdata)[ind0 + 5];
+            i_ddas_scaler_data.inc_val_ch02 = (*pscalerdata)[ind0 + 6];
+            i_ddas_scaler_data.inc_raw_ch03 = (*pscalerdata)[ind0 + 7];
+            i_ddas_scaler_data.inc_val_ch03 = (*pscalerdata)[ind0 + 8];
+            i_ddas_scaler_data.inc_raw_ch04 = (*pscalerdata)[ind0 + 9];
+            i_ddas_scaler_data.inc_val_ch04 = (*pscalerdata)[ind0 + 10];
+            i_ddas_scaler_data.inc_raw_ch05 = (*pscalerdata)[ind0 + 11];
+            i_ddas_scaler_data.inc_val_ch05 = (*pscalerdata)[ind0 + 12];
+            i_ddas_scaler_data.inc_raw_ch06 = (*pscalerdata)[ind0 + 13];
+            i_ddas_scaler_data.inc_val_ch06 = (*pscalerdata)[ind0 + 14];
+            i_ddas_scaler_data.inc_raw_ch07 = (*pscalerdata)[ind0 + 15];
+            i_ddas_scaler_data.inc_val_ch07 = (*pscalerdata)[ind0 + 16];
+            i_ddas_scaler_data.inc_raw_ch08 = (*pscalerdata)[ind0 + 17];
+            i_ddas_scaler_data.inc_val_ch08 = (*pscalerdata)[ind0 + 18];
+            i_ddas_scaler_data.inc_raw_ch09 = (*pscalerdata)[ind0 + 19];
+            i_ddas_scaler_data.inc_val_ch09 = (*pscalerdata)[ind0 + 20];
+            i_ddas_scaler_data.inc_raw_ch10 = (*pscalerdata)[ind0 + 21];
+            i_ddas_scaler_data.inc_val_ch10 = (*pscalerdata)[ind0 + 22];
+            i_ddas_scaler_data.inc_raw_ch11 = (*pscalerdata)[ind0 + 23];
+            i_ddas_scaler_data.inc_val_ch11 = (*pscalerdata)[ind0 + 24];
+            i_ddas_scaler_data.inc_raw_ch12 = (*pscalerdata)[ind0 + 25];
+            i_ddas_scaler_data.inc_val_ch12 = (*pscalerdata)[ind0 + 26];
+            i_ddas_scaler_data.inc_raw_ch13 = (*pscalerdata)[ind0 + 27];
+            i_ddas_scaler_data.inc_val_ch13 = (*pscalerdata)[ind0 + 28];
+            i_ddas_scaler_data.inc_raw_ch14 = (*pscalerdata)[ind0 + 29];
+            i_ddas_scaler_data.inc_val_ch14 = (*pscalerdata)[ind0 + 30];
+            i_ddas_scaler_data.inc_raw_ch15 = (*pscalerdata)[ind0 + 31];
+            i_ddas_scaler_data.inc_val_ch15 = (*pscalerdata)[ind0 + 32];
+            ++slot_num;
+            pddasscaler->push_back(i_ddas_scaler_data);
         }
-
-        // extend size along dim0
-        s_size[0] += s_nrows_sub;
-
-        // extend the dataset
-        scaler_dset.extend(s_size);
-
-        // select a hyperslab
-        s_fspace = scaler_dset.getSpace();
-        s_offset[0] = s_current_row_id;
-        scaler_dims1[0] = s_nrows_sub;
-        s_fspace.selectHyperslab(H5S_SELECT_SET, scaler_dims1, s_offset);
-
-        scaler_dset.write(scalerdata_subarr, scaler_dtype, scaler_dspace, s_fspace);
-
-        s_current_row_id += s_nrows_sub;
     }
+
+    struct sort_key {
+        inline bool operator() (const DDASScalerData& left, const DDASScalerData& right) {
+            if (left.slot_id < right.slot_id) return true;
+            if (left.slot_id > right.slot_id) return false;
+            if (left.timestamp < right.timestamp) return true;
+            if (left.timestamp > right.timestamp) return false;
+            return false;
+        }
+    };
+    // sort pddasscaler with slot ID
+    std::sort(pddasscaler->begin(), pddasscaler->end(), sort_key());
+
+    // create a dataspace for scaler data
+    hsize_t s_dim[] = {pddasscaler->size()};
+    auto s_dspace = new H5::DataSpace(SCALER_DATA_RANK, s_dim);
+
+    // create a dataset under the new group
+    auto s_dset = new H5::DataSet(grp->createDataSet(SCALERS_DSET_NAME, ddas_scaler_dtype, *s_dspace));
+
+    // write dataset: fragments
+    s_dset->write(pddasscaler->data(), ddas_scaler_dtype);
 
   } catch (H5::FileIException &error) {
     error.printErrorStack();

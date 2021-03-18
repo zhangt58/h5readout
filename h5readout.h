@@ -93,7 +93,85 @@ const int FRAGMENT_DATA_RANK = 1;
 const int TRACE_DATA_RANK = 2;
 
 // scaler data rank
-const int SCALER_DATA_RANK = 2;
+const int SCALER_DATA_RANK = 1;
+
+// type for DDAS scaler data ()
+typedef struct DDASScalerData {
+  time_t timestamp;
+  char datetime[80];
+  uint32_t crate_id;
+  uint32_t slot_id;      // beginning at 2
+  uint32_t inc_raw_ch00; // raw trigger incremental count at slot-id.ch0
+  uint32_t inc_val_ch00; // validated trigger incremental count
+  uint32_t inc_raw_ch01;
+  uint32_t inc_val_ch01;
+  uint32_t inc_raw_ch02;
+  uint32_t inc_val_ch02;
+  uint32_t inc_raw_ch03;
+  uint32_t inc_val_ch03;
+  uint32_t inc_raw_ch04;
+  uint32_t inc_val_ch04;
+  uint32_t inc_raw_ch05;
+  uint32_t inc_val_ch05;
+  uint32_t inc_raw_ch06;
+  uint32_t inc_val_ch06;
+  uint32_t inc_raw_ch07;
+  uint32_t inc_val_ch07;
+  uint32_t inc_raw_ch08;
+  uint32_t inc_val_ch08;
+  uint32_t inc_raw_ch09;
+  uint32_t inc_val_ch09;
+  uint32_t inc_raw_ch10;
+  uint32_t inc_val_ch10;
+  uint32_t inc_raw_ch11;
+  uint32_t inc_val_ch11;
+  uint32_t inc_raw_ch12;
+  uint32_t inc_val_ch12;
+  uint32_t inc_raw_ch13;
+  uint32_t inc_val_ch13;
+  uint32_t inc_raw_ch14;
+  uint32_t inc_val_ch14;
+  uint32_t inc_raw_ch15;
+  uint32_t inc_val_ch15;
+} DDASScalerData;
+
+// for H5 compound data type
+const std::string DDAS_SCALER_TIMESTAMP("Timestamp");// time_t
+const std::string DDAS_SCALER_DATETIME("Datetime");  // char[80]
+const std::string DDAS_SCALER_CRATE_ID("Crate_ID");  //uint32_t
+const std::string DDAS_SCALER_SLOT_ID("Slot_ID");    //uint32_t
+const std::string DDAS_SCALER_RAW_CH00("Raw_Ch00");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH00("Val_Ch00");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH01("Raw_Ch01");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH01("Val_Ch01");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH02("Raw_Ch02");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH02("Val_Ch02");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH03("Raw_Ch03");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH03("Val_Ch03");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH04("Raw_Ch04");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH04("Val_Ch04");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH05("Raw_Ch05");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH05("Val_Ch05");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH06("Raw_Ch06");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH06("Val_Ch06");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH07("Raw_Ch07");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH07("Val_Ch07");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH08("Raw_Ch08");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH08("Val_Ch08");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH09("Raw_Ch09");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH09("Val_Ch09");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH10("Raw_Ch10");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH10("Val_Ch10");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH11("Raw_Ch11");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH11("Val_Ch11");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH12("Raw_Ch12");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH12("Val_Ch12");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH13("Raw_Ch13");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH13("Val_Ch13");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH14("Raw_Ch14");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH14("Val_Ch14");  //uint32_t
+const std::string DDAS_SCALER_RAW_CH15("Raw_Ch15");  //uint32_t
+const std::string DDAS_SCALER_VAL_CH15("Val_Ch15");  //uint32_t
 
 /*
 data structure:
@@ -103,7 +181,6 @@ data structure:
   - Traces (dataset)
   - Scalers (dataset)
 */
-
 
 /**
  * Argument parser

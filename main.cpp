@@ -2,9 +2,14 @@
 
 #include <iostream>
 
-#include "h5readout.h"
+#include <CDataSource.h>
+#include <CDataSourceFactory.h>
+#include <CErrnoException.h>
+#include <CPortManagerException.h>
+
+#include "processor.h"
 #include "misc.h"
-//#include "processor.h"
+#include "h5readout.h"
 
 int main(int argc, char **argv) {
 
@@ -62,32 +67,59 @@ int main(int argc, char **argv) {
   // debug
   argparser.print_all_args();
 
+
+  // Ring Item types that can be sampled
+  std::vector<std::uint16_t> sample;
+  // Ring Item types that can be filtered out
+  std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
+
+  CDataSource *data_source;
+  try {
+    data_source = CDataSourceFactory::makeSource(input_uri, sample, exclude);
+  } catch (CPortManagerException &ex) {
+    fprintf(stderr, "Failed to open data source: %s\n", ex.ReasonText());
+    return EXIT_FAILURE;
+  } catch (CErrnoException &ex) {
+    fprintf(stderr, "Failed to open data source: %s\n", ex.ReasonText());
+    return EXIT_FAILURE;
+  }
+
+  // container for all fragments (exclude trace)
+  std::vector<FragmentData> *pfragdata = new std::vector<FragmentData>();
+  // container for all trace data
+  std::vector<uint16_t> *ptracedata = new std::vector<uint16_t>();
+
+  CRingItem *pItem;
+  uint64_t event_id = 0;  // event count
+  uint64_t frag_cnt = 0;  // total framgnets count
+
+  RunMetaData run_metadata;
+  CRingItemProcessor processor;
+
+  try {
+    // start reading
+    fprintf(stdout, "Reading data from: %s\n", input_uri);
+    // reading fragment data
+    while (event_id < max_evt_cnt && (pItem = data_source->getItem())) {
+        processRingItem(processor, pItem, run_metadata, event_id, frag_cnt, pfragdata, ptracedata, verbose);
+    }
+  } catch (CErrnoException &ex) {
+    fprintf(stderr, "Failed to read data source: %s\n", ex.ReasonText());
+    return EXIT_FAILURE;
+  }
+
+  // update metadata
+  run_metadata.n_frags = frag_cnt;
+  run_metadata.n_events = event_id;
+  std::cout << "Run #: " << run_metadata.number << "\n"
+            << " Title: " << run_metadata.title << "\n"
+            << " Timestamp: " << run_metadata.ts << "\n"
+            << " Datetime: " << run_metadata.date << "\n"
+            << " RingFormat: " << run_metadata.fmt << "\n"
+            << " Read events: " << run_metadata.n_events << "\n"
+            << " Read fragments: " << run_metadata.n_frags
+            << std::endl;
+
+
   return EXIT_SUCCESS;
 }
-
-//  // Ring Item types that can be sampled
-//  std::vector<std::uint16_t> sample;
-//  // Ring Item types that can be filtered out
-//  std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
-//
-//  CDataSource *data_source;
-//  try {
-//    data_source = CDataSourceFactory::makeSource(uri, sample, exclude);
-//  } catch (CPortManagerException &ex) {
-//    fprintf(stderr, "Failed to open data source: %s\n", ex.ReasonText());
-//    return EXIT_FAILURE;
-//  } catch (CErrnoException &ex) {
-//    fprintf(stderr, "Failed to open data source: %s\n", ex.ReasonText());
-//    return EXIT_FAILURE;
-//  }
-//
-//  // container for all fragments (exclude trace)
-//  std::vector<FragmentData> *pfragdata = new std::vector<FragmentData>();
-//  // container for all trace data
-//  std::vector<uint16_t> *ptracedata = new std::vector<uint16_t>();
-//
-//  CRingItem *pItem;
-//  uint64_t event_id = 0;  // event count
-//  uint64_t frag_cnt = 0;  // total framgnets count
-//
-//  RunMetaData run_metadata;

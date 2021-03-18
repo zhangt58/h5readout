@@ -1,6 +1,6 @@
 EXEC = h5readout
 CC = g++
-OBJ = h5readout.o main.o
+OBJ = h5readout.o processor.o main.o 
 #
 #spdaq22: Debian 8
 # DAQPATH=/usr/opt/daq/experimental/11.3-018

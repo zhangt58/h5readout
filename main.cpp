@@ -2,12 +2,12 @@
 
 #include <iostream>
 
-//#include "processor.h"
-#include "misc.h"
 #include "h5readout.h"
+#include "misc.h"
+//#include "processor.h"
 
+int main(int argc, char **argv) {
 
-int main(int argc, char** argv) {
   // argument parser
   auto argparser = ArgumentParser();
   argparser.parse(argc, argv);
@@ -19,7 +19,31 @@ int main(int argc, char** argv) {
 
   // -h or missing -i
   if (argparser.print_help_if_possible()) {
-      return EXIT_FAILURE;
+    return EXIT_FAILURE;
+  }
+
+  // invalid input data source?
+  if (!argparser.validate_input_data_source()) {
+    fprintf(stderr, "Failed to find the real path for '%s': %s\n",
+            argparser.get_input_data_source().c_str(), strerror(errno));
+    return EXIT_FAILURE;
+  }
+
+  // get input data source as URI
+  std::string input_uri = argparser.get_input_data_source_as_uri();
+
+  // get output full path
+  std::string output_filepath = argparser.get_output_filepath();
+
+  // give warning if to overwrite existing file.
+  char outfilepath_char[output_filepath.length() + 1];
+  strcpy(outfilepath_char, output_filepath.c_str());
+  if (is_file(outfilepath_char)) {
+    printf("Warning: Overwrite output file '%s'? ([Y]/n)", outfilepath_char);
+    char c = getc(stdin);
+    if (c == 'n' || c == 'N') {
+      return EXIT_SUCCESS;
+    }
   }
 
   // data gzip compress level and compress method
@@ -35,34 +59,9 @@ int main(int argc, char** argv) {
   // verbose?
   bool verbose = argparser.is_verbose();
 
-  // invalid input data source?
-  if (! argparser.validate_input_data_source()) {
-    fprintf(stderr, "Failed to find the real path for '%s': %s\n",
-            argparser.get_input_data_source().c_str(),
-            strerror(errno));
-    return EXIT_FAILURE;
-  }
-
-  // get input data source as URI
-  std::string input_uri = argparser.get_input_data_source_as_uri();
-
-  // get output full path
-  std::string output_filepath = argparser.get_output_filepath();
-
-  // give warning if to overwrite existing file.
-  char outfilepath_tmp[output_filepath.length() + 1];
-  strcpy(outfilepath_tmp, output_filepath.c_str());
-  if (is_file(outfilepath_tmp)) {
-      std::cout << "Warning: Overwrite output file: '" << output_filepath << "' ([Y]/n?) ";
-      char c = getc(stdin);
-      if (c == 'n' || c == 'N') {
-          return EXIT_SUCCESS;
-      }
-  }
-
+  // debug
   argparser.print_all_args();
 
-    
   return EXIT_SUCCESS;
 }
 
@@ -92,4 +91,3 @@ int main(int argc, char** argv) {
 //  uint64_t frag_cnt = 0;  // total framgnets count
 //
 //  RunMetaData run_metadata;
-

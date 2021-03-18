@@ -160,7 +160,7 @@ void ArgumentParser::print_all_args() {
     std::cout << "Input data source: " << get_input_data_source() << "\n"
               << "Input data source (URI): " << get_input_data_source_as_uri() << "\n"
               << "Output data path: " << get_output_filepath() << "\n"
-              << "Max events: " << get_max_evt() << "\n"
+              << "Max physics events: " << get_max_evt() << "\n"
               << "Chunk dims: " << pdim[0] << "x" << pdim[1] << "\n"
               << "Compress method: " << get_compress_method() << "\n"
               << "Gzip compress level: " << get_gzip_compress_level() << "\n"
@@ -194,7 +194,8 @@ void ArgumentParser::print_help() {
     printf("  %-28s   %s\n", "-o, --output arg", "File path for HDF5 data, if assigned with");
     printf("  %-28s   %s\n", "", "a valid directory, apply default filename");
     printf("  %-28s   %s\n", "", "under that directory (default: <INPUT>.h5)");
-    printf("  %-28s   %s\n", "    --events arg", std::string("Number of events to readout (default: " + std::to_string(INT_MAX) + ")").c_str());
+    printf("  %-28s   %s\n", "-n, --events arg", "Maximum number of physics events to readout");
+    printf("  %-28s   %s\n", "", std::string("(default: " + std::to_string(INT_MAX) + ")").c_str());
     printf("  %-28s   %s\n", "-s, --chunk-size arg", "Chunk size MxN for HDF5 data (default: 0x0)");
     printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip' (default: gzip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level(0-9) (default: 8)");

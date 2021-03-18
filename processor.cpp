@@ -11,31 +11,34 @@
 
 #include "processor.h"
 
-
 void processRingItem(CRingItemProcessor& processor, CRingItem* item,
                      RunMetaData& run_meta,
                      uint64_t& event_id, uint64_t& frag_cnt,
                      std::vector<FragmentData> *pfragdata,
                      std::vector<uint16_t> *ptracedata,
+                     std::vector<time_t> *pscalerts,
+                     std::vector<uint32_t> *pscalerlen,
+                     std::vector<uint32_t> *pscalerdata,
                      bool& verbose) {
     std::unique_ptr<CRingItem> item_(item);
     std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item_));
 
-    switch (castableItem->type()) {
+    uint16_t item_type = castableItem->type();
+    switch (item_type) {
         case BEGIN_RUN:
         case END_RUN:
         case PAUSE_RUN:
         case RESUME_RUN:
             {
                 CRingStateChangeItem& state_change_item = dynamic_cast<CRingStateChangeItem &>(*castableItem);
-                processor.processStateChangeItem(state_change_item, run_meta);
+                processor.processStateChangeItem(state_change_item, run_meta, item_type);
                 break;
             }
         case PERIODIC_SCALERS:
             {
 
                 CRingScalerItem& scaler_item = dynamic_cast<CRingScalerItem &>(*castableItem);
-                processor.processScalerItem(scaler_item);
+                processor.processScalerItem(scaler_item, pscalerts, pscalerlen, pscalerdata);
                 break;
             }
         case PACKET_TYPES:
@@ -84,11 +87,18 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
  *   Extract metadata.
  *
  */
-void CRingItemProcessor::processStateChangeItem(CRingStateChangeItem& item, RunMetaData& run_meta) {
-    run_meta.number = item.getRunNumber();
-    strcpy(run_meta.title, item.getTitle().c_str());
-    run_meta.ts = item.getTimestamp();
-    std::strftime(run_meta.date, sizeof(run_meta.date), "%c", std::localtime(&run_meta.ts));
+void CRingItemProcessor::processStateChangeItem(CRingStateChangeItem& item,
+                                                RunMetaData& run_meta, uint16_t& item_type) {
+    if (item_type == BEGIN_RUN) {
+        run_meta.number = item.getRunNumber();
+        strcpy(run_meta.title, item.getTitle().c_str());
+        run_meta.ts0 = item.getTimestamp();
+        std::strftime(run_meta.date0, sizeof(run_meta.date0), "%c", std::localtime(&run_meta.ts0));
+    } else if (item_type == END_RUN) {
+        run_meta.ts1 = item.getTimestamp();
+        std::strftime(run_meta.date1, sizeof(run_meta.date1), "%c", std::localtime(&run_meta.ts1));
+        run_meta.dt = item.getElapsedTime();
+    }
 }
 
 /**
@@ -96,13 +106,23 @@ void CRingItemProcessor::processStateChangeItem(CRingStateChangeItem& item, RunM
  *   Deal with scaler data.
  *
  */
-void CRingItemProcessor::processScalerItem(CRingScalerItem& item) {
+void CRingItemProcessor::processScalerItem(CRingScalerItem& item,
+                                           std::vector<time_t> *pscalerts,
+                                           std::vector<uint32_t> *pscalerlen,
+                                           std::vector<uint32_t> *pscalerdata) {
+    time_t tm = item.getTimestamp();
+    uint32_t cnt = item.getScalerCount();
+    pscalerts->push_back(tm);
+    pscalerlen->push_back(cnt);
 
-    std::cout << item.getTimestamp() << " T " << item.typeName() << " "
-              << "(" << item.getScalerCount() << "):";
+    char tm_date[1000];
+    std::strftime(tm_date, 1000, "%c", std::localtime(&tm));
+    std::cout << "--> " << item.typeName() << ": ";
+    std::cout << tm_date << " " << "(" << cnt << "):";
 
     for (auto const& v: item.getScalers()) {
         std::cout << " " << v;
+        pscalerdata->push_back(v);
     }
     std::cout << std::endl;
 }
@@ -113,14 +133,14 @@ void CRingItemProcessor::processScalerItem(CRingScalerItem& item) {
  */
 void CRingItemProcessor::processTextItem(CRingTextItem& item) {
     time_t tm = item.getTimestamp();
-    std::cout << item.typeName() << " item recorded at "
-        << std::ctime(&tm) << " " << item.getTimeOffset()
-        << " seconds into the run\n";
-    std::cout << "Here are the record strings: \n";
-    for (auto const& c: item.getStrings()) {
-        std::cout << c << " ";
+    char tm_date[1000];
+    std::strftime(tm_date, 1000, "%c", std::localtime(&tm));
+    std::cout << "--> " << item.typeName() << ": "
+        << tm_date << " " << item.getTimeOffset() << " seconds into the run\n";
+    std::cout << "---> Here are the record strings: \n";
+    for (auto const& s: item.getStrings()) {
+        std::cout << "----> " << s << "\n";
     }
-    std::cout << std::endl;
 }
 
 
@@ -236,10 +256,10 @@ void CRingItemProcessor::processFormat(CDataFormatItem& item, RunMetaData& run_m
  *
  */
 void CRingItemProcessor::processGlomParams(CGlomParameters& item) {
-    std::cout << "Event built data. Glom is: ";
+    std::cout << "--> " << item.typeName() << ": ";
     if (item.isBuilding()) {
-        std::cout << "builing with coincidence interval: "
-            << item.coincidenceTicks() << std::endl;
+        std::cout << "Coincidence interval: "
+            << item.coincidenceTicks() << ", ";
         std::cout << "Timestamp policy: " << glomPolicyMap[item.timestampPolicy()]
             << std::endl;
     } else {

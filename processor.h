@@ -17,9 +17,13 @@
 
 class CRingItemProcessor {
 public:
-    virtual void processScalerItem(CRingScalerItem& item);
+    virtual void processScalerItem(CRingScalerItem& item,
+                                   std::vector<time_t> *pscalerts,
+                                   std::vector<uint32_t> *pscalerlen,
+                                   std::vector<uint32_t> *pscalerdata);
     virtual void processStateChangeItem(CRingStateChangeItem& item,
-                                        RunMetaData& run_meta);
+                                        RunMetaData& run_meta,
+                                        uint16_t& item_type);
     virtual void processTextItem(CRingTextItem& item);
     virtual void processEvent(CPhysicsEventItem& item,
                               uint64_t& event_id, uint64_t& frag_cnt,
@@ -44,4 +48,7 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
                      uint64_t& event_id, uint64_t& frag_cnt,
                      std::vector<FragmentData> *pfragdata,
                      std::vector<uint16_t> *ptracedata,
+                     std::vector<time_t> *pscalerts,
+                     std::vector<uint32_t> *pscalerlen,
+                     std::vector<uint32_t> *pscalerdata,
                      bool& verbose);

@@ -17,8 +17,11 @@ const std::string VERSION = "1.4";
 typedef struct RunMetaData {
   uint32_t number;    // run number
   char title[80];     // title
-  time_t ts;          // posix timestamp
-  char date[80];      // datetime from ts
+  time_t ts0;         // begin timestamp
+  time_t ts1;         // end timestamp
+  char date0[80];     // datetime from ts0
+  char date1[80];     // datetime from ts1
+  uint32_t dt;        // elapsed time in sec
   char fmt[6];        // ring format
   uint64_t n_events;  // total events
   uint64_t n_frags;   // total fragments
@@ -27,8 +30,11 @@ typedef struct RunMetaData {
 // runmetadata compound data type
 const std::string META_DATA_RUN_NUMBER("Run_Number");           // uint32_t
 const std::string META_DATA_TITLE("Title");                     // char[80]
-const std::string META_DATA_TIMESTAMP("Timestamp");             // time_t
-const std::string META_DATA_DATETIME("Datetime");               // char[80]
+const std::string META_DATA_TIMESTAMP_0("Begin_Timestamp");     // time_t
+const std::string META_DATA_TIMESTAMP_1("End_Timestamp");       // time_t
+const std::string META_DATA_ELAPSEDTIME("Elapsed_Seconds");     // uint32_t
+const std::string META_DATA_DATETIME_0("Begin_Datetime");       // char[80]
+const std::string META_DATA_DATETIME_1("End_Datetime");         // char[80]
 const std::string META_DATA_TOTAL_EVENTS("Total_Events");       // uint64_t
 const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
 const std::string META_DATA_RING_FORMAT("Ring_Format");         // char[6]
@@ -78,6 +84,7 @@ const std::string PHYSICS_EVENT_GROUP_NAME("DDAS_Data");
 // dataset names under DDAS_Data group
 const std::string FRAGMENTS_DSET_NAME("Fragments");
 const std::string TRACES_DSET_NAME("Traces");
+const std::string SCALERS_DSET_NAME("Scalers");
 
 // fragment data rank
 const int FRAGMENT_DATA_RANK = 1;
@@ -85,12 +92,16 @@ const int FRAGMENT_DATA_RANK = 1;
 // trace data rank
 const int TRACE_DATA_RANK = 2;
 
+// scaler data rank
+const int SCALER_DATA_RANK = 2;
+
 /*
 data structure:
  / (root group)
  /DDAS_Data
   - Fragments (dataset)
   - Traces (dataset)
+  - Scalers (dataset)
 */
 
 

@@ -94,6 +94,9 @@ void CRingItemProcessor::processStateChangeItem(CRingStateChangeItem& item,
         strcpy(run_meta.title, item.getTitle().c_str());
         run_meta.ts0 = item.getTimestamp();
         std::strftime(run_meta.date0, sizeof(run_meta.date0), "%c", std::localtime(&run_meta.ts0));
+        run_meta.ts1 = item.getTimestamp();
+        std::strftime(run_meta.date1, sizeof(run_meta.date1), "%c", std::localtime(&run_meta.ts1));
+        run_meta.dt = item.getElapsedTime();
     } else if (item_type == END_RUN) {
         run_meta.ts1 = item.getTimestamp();
         std::strftime(run_meta.date1, sizeof(run_meta.date1), "%c", std::localtime(&run_meta.ts1));

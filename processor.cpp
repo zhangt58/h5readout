@@ -19,7 +19,7 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
                      std::vector<time_t> *pscalerts,
                      std::vector<uint32_t> *pscalerlen,
                      std::vector<uint32_t> *pscalerdata,
-                     bool& verbose) {
+                     int& verbosity) {
     std::unique_ptr<CRingItem> item_(item);
     std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item_));
 
@@ -38,21 +38,21 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
             {
 
                 CRingScalerItem& scaler_item = dynamic_cast<CRingScalerItem &>(*castableItem);
-                processor.processScalerItem(scaler_item, pscalerts, pscalerlen, pscalerdata);
+                processor.processScalerItem(scaler_item, pscalerts, pscalerlen, pscalerdata, verbosity);
                 break;
             }
         case PACKET_TYPES:
         case MONITORED_VARIABLES:
             {
                 CRingTextItem& text_item = dynamic_cast<CRingTextItem &>(*castableItem);
-                processor.processTextItem(text_item);
+                processor.processTextItem(text_item, verbosity);
                 break;
             }
         case PHYSICS_EVENT:
             {
             // each event data goes to one group named "Event<event_id>" under root
                 CPhysicsEventItem& phy_item = dynamic_cast<CPhysicsEventItem &>(*castableItem);
-                processor.processEvent(phy_item, event_id, frag_cnt, pfragdata, ptracedata, verbose);
+                processor.processEvent(phy_item, event_id, frag_cnt, pfragdata, ptracedata, verbosity);
                 event_id++;
                 break;
             }
@@ -71,12 +71,12 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
         case EVB_GLOM_INFO:
             {
                 CGlomParameters& glom_item = dynamic_cast<CGlomParameters &>(*castableItem);
-                processor.processGlomParams(glom_item);
+                processor.processGlomParams(glom_item, verbosity);
                 break;
             }
         default:
             {
-                processor.processUnknownItem(*item_);
+                processor.processUnknownItem(*item_, verbosity);
                 break;
             }
     }
@@ -109,7 +109,8 @@ void CRingItemProcessor::processStateChangeItem(CRingStateChangeItem& item,
 void CRingItemProcessor::processScalerItem(CRingScalerItem& item,
                                            std::vector<time_t> *pscalerts,
                                            std::vector<uint32_t> *pscalerlen,
-                                           std::vector<uint32_t> *pscalerdata) {
+                                           std::vector<uint32_t> *pscalerdata,
+                                           int& verbosity) {
     time_t tm = item.getTimestamp();
     uint32_t cnt = item.getScalerCount();
     pscalerts->push_back(tm);
@@ -117,29 +118,37 @@ void CRingItemProcessor::processScalerItem(CRingScalerItem& item,
 
     char tm_date[1000];
     std::strftime(tm_date, 1000, "%c", std::localtime(&tm));
-    std::cout << "--> " << item.typeName() << ": ";
-    std::cout << tm_date << " " << "(" << cnt << "):";
 
     for (auto const& v: item.getScalers()) {
-        std::cout << " " << v;
         pscalerdata->push_back(v);
     }
-    std::cout << std::endl;
+
+    if (verbosity > 0) {
+        std::cout << "--> " << item.typeName() << ": ";
+        std::cout << tm_date << " " << "(" << cnt << "):";
+
+        for (auto const& v: item.getScalers()) {
+            std::cout << " " << v;
+        }
+        std::cout << std::endl;
+    }
 }
 
 /**
  * processTextItem
  *
  */
-void CRingItemProcessor::processTextItem(CRingTextItem& item) {
+void CRingItemProcessor::processTextItem(CRingTextItem& item, int& verbosity) {
     time_t tm = item.getTimestamp();
     char tm_date[1000];
     std::strftime(tm_date, 1000, "%c", std::localtime(&tm));
-    std::cout << "--> " << item.typeName() << ": "
-        << tm_date << " " << item.getTimeOffset() << " seconds into the run\n";
-    std::cout << "---> Here are the record strings: \n";
-    for (auto const& s: item.getStrings()) {
-        std::cout << "----> " << s << "\n";
+    if (verbosity > 2) {
+        std::cout << "--> " << item.typeName() << ": "
+            << tm_date << " " << item.getTimeOffset() << " seconds into the run\n";
+        std::cout << "---> Here are the record strings: \n";
+        for (auto const& s: item.getStrings()) {
+            std::cout << "----> " << s << "\n";
+        }
     }
 }
 
@@ -153,7 +162,7 @@ void CRingItemProcessor::processEvent(CPhysicsEventItem& item,
                                       uint64_t& event_id, uint64_t& frag_cnt,
                                       std::vector<FragmentData> *pfragdata,
                                       std::vector<uint16_t> *ptracedata,
-                                      bool& verbose) {
+                                      int& verbosity) {
 //    fprintf(stdout, "Processing evt-id: %u\n", event_id);
 //    return 0;
 //
@@ -180,7 +189,7 @@ void CRingItemProcessor::processEvent(CPhysicsEventItem& item,
             .event_id = event_id
         };
 
-        if (verbose) {
+        if (verbosity == 2) {
         fprintf(stdout, "Processing evt-id: %u, frgmt: %u, ts: %u, accu frgmts: %u\n",
                 event_id, fragment.s_sourceId, fragment.s_timestamp, frag_cnt);
         }
@@ -255,15 +264,17 @@ void CRingItemProcessor::processFormat(CDataFormatItem& item, RunMetaData& run_m
  * processGlomParams
  *
  */
-void CRingItemProcessor::processGlomParams(CGlomParameters& item) {
-    std::cout << "--> " << item.typeName() << ": ";
-    if (item.isBuilding()) {
-        std::cout << "Coincidence interval: "
-            << item.coincidenceTicks() << ", ";
-        std::cout << "Timestamp policy: " << glomPolicyMap[item.timestampPolicy()]
-            << std::endl;
-    } else {
-        std::cout << "operating in passthrough (non-building) mode" << std::endl;
+void CRingItemProcessor::processGlomParams(CGlomParameters& item, int& verbosity) {
+    if (verbosity > 2) {
+        std::cout << "--> " << item.typeName() << ": ";
+        if (item.isBuilding()) {
+            std::cout << "Coincidence interval: "
+                << item.coincidenceTicks() << ", ";
+            std::cout << "Timestamp policy: " << glomPolicyMap[item.timestampPolicy()]
+                << std::endl;
+        } else {
+            std::cout << "operating in passthrough (non-building) mode" << std::endl;
+        }
     }
 }
 
@@ -271,6 +282,8 @@ void CRingItemProcessor::processGlomParams(CGlomParameters& item) {
  * processUnknownItem
  *
  */
-void CRingItemProcessor::processUnknownItem(CRingItem& item) {
-    std::cout << "Unknown Type: " << item.toString() << std::endl;
+void CRingItemProcessor::processUnknownItem(CRingItem& item, int& verbosity) {
+    if (verbosity > 2) {
+        std::cout << "Unknown Type: " << item.toString() << std::endl;
+    }
 }

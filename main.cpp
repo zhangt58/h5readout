@@ -69,8 +69,8 @@ int main(int argc, char **argv) {
   // chunk dims
   auto chunk_dims = argparser.get_chunk_dims();
 
-  // verbose?
-  bool verbose = argparser.is_verbose();
+  // verbosity level
+  int verbosity = argparser.get_verbosity();
 
   // debug
   // argparser.print_all_args();
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
         processRingItem(processor, pItem, run_metadata, event_id, frag_cnt,
                         pfragdata, ptracedata,
                         pscalerts, pscalerlen, pscalerdata,
-                        verbose);
+                        verbosity);
     }
   } catch (CErrnoException &ex) {
     fprintf(stderr, "Failed to read data source: %s\n", ex.ReasonText());

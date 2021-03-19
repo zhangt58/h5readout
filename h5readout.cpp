@@ -42,6 +42,7 @@ void ArgumentParser::init_options() {
     m_default_params["chunk-size"] = "0x0";
     m_default_params["compress"] = "gzip";
     m_default_params["compress-level"] = std::to_string(8);
+    m_default_params["verbosity"] = std::to_string(0);
 }
 
 void ArgumentParser::parse(int argc, char** argv) {
@@ -66,8 +67,8 @@ void ArgumentParser::parse(int argc, char** argv) {
     // max event number
     m_parser({"n", "events"}, get_default("events")) >> m_max_evt;
 
-    // verbose?
-    m_verbose = m_parser[{"v", "verbose"}];
+    // verbose level
+    m_parser({"v", "verbose"}, get_default("verbosity")) >> m_verbosity;
 
     // input data source
     m_parser(1) >> m_ifname; // first positional arg
@@ -90,8 +91,8 @@ bool ArgumentParser::validate_input_data_source() {
     }
 }
 
-bool ArgumentParser::is_verbose() {
-    return m_verbose;
+int ArgumentParser::get_verbosity() {
+    return m_verbosity;
 }
 
 std::string ArgumentParser::get_version() {
@@ -164,7 +165,7 @@ void ArgumentParser::print_all_args() {
               << "Chunk dims: " << pdim[0] << "x" << pdim[1] << "\n"
               << "Compress method: " << get_compress_method() << "\n"
               << "Gzip compress level: " << get_gzip_compress_level() << "\n"
-              << "Verbose on? : "  << is_verbose() << "\n"
+              << "Verbose level : "  << get_verbosity() << "\n"
               << "Show version? : " << print_version_if_possible() << "\n"
               << "Show help? : " << print_help_if_possible() << "\n";
 }
@@ -199,7 +200,10 @@ void ArgumentParser::print_help() {
     printf("  %-28s   %s\n", "-s, --chunk-size arg", "Chunk size MxN for HDF5 data (default: 0x0)");
     printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip' (default: gzip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level(0-9) (default: 8)");
-    printf("  %-28s   %s\n", "-v, --verbose", "Show verbose message");
+    printf("  %-28s   %s\n", "-v, --verbose arg", "Level of verbosity (0-2) (default: 0)");
+    printf("  %-28s   %s\n", "", "1: Show Scaler info");
+    printf("  %-28s   %s\n", "", "2: Show Scaler and Event info");
+    printf("  %-28s   %s\n", "", "3: Show all info");
     printf("  %-28s   %s\n", "    --version", "Show version info");
     printf("  %-28s   %s\n", "-h, --help", "Print this message");
 }

@@ -226,8 +226,12 @@ class ArgumentParser {
         // max evt number
         uint64_t get_max_evt();
 
-        // verbose?
-        bool is_verbose();
+        // verbosity level, 0 (default), 1, 2
+        // 0: no messages
+        // 1: scaler
+        // 2: scaler, events
+        // 3: all
+        int get_verbosity();
 
         // input data source (original arg)
         std::string get_input_data_source();
@@ -261,7 +265,7 @@ class ArgumentParser {
         hsize_t *m_chunk_dims;
         uint64_t m_max_evt;
 
-        bool m_verbose;
+        int m_verbosity;
 
         std::string m_ifname;
         std::string m_ofname;

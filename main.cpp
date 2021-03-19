@@ -22,7 +22,7 @@ const int S_NROWS_PER_WRITE = 1;
 int main(int argc, char **argv) {
 
   // argument parser
-  auto argparser = ArgumentParser();
+  ArgumentParser argparser = ArgumentParser();
   argparser.parse(argc, argv);
 
   // --version
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   uint64_t max_evt_cnt = argparser.get_max_evt();
 
   // chunk dims
-  auto chunk_dims = argparser.get_chunk_dims();
+  hsize_t* chunk_dims = argparser.get_chunk_dims();
 
   // verbosity level
   int verbosity = argparser.get_verbosity();
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
   try {
     // H5::Exception::dontPrint();
     // create an h5 file handle
-    auto h5file = new H5::H5File(output_filepath, H5F_ACC_TRUNC);
+    H5::H5File* h5file = new H5::H5File(output_filepath, H5F_ACC_TRUNC);
 
     // create mem data type for FragmentData
     const H5::CompType frag_dtype(sizeof(FragmentData));
@@ -164,78 +164,81 @@ int main(int argc, char **argv) {
     frag_dtype.insertMember(FRAGMENT_DATA_ADC_RESOLUTION,      HOFFSET(FragmentData, adc_resolution),     H5::PredType::NATIVE_INT);
 
     // create a new group "PhysicsEvent"
-    auto grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
+    H5::Group* grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
 
     // meta data
     // run number
-    auto attr_run_number = new H5::Attribute(grp->createAttribute(META_DATA_RUN_NUMBER,
+    H5::Attribute* attr_run_number = new H5::Attribute(grp->createAttribute(META_DATA_RUN_NUMBER,
                                              H5::PredType::NATIVE_INT,
                                              H5::DataSpace(H5S_SCALAR)));
     attr_run_number->write(H5::PredType::NATIVE_INT, &run_metadata.number);
 
     // title
     H5::StrType stype(H5::PredType::C_S1, 80);
-    auto attr_title = new H5::Attribute(grp->createAttribute(META_DATA_TITLE,
+    H5::Attribute* attr_title = new H5::Attribute(grp->createAttribute(META_DATA_TITLE,
                                         stype,
                                         H5::DataSpace(H5S_SCALAR)));
     attr_title->write(stype, run_metadata.title);
 
     // ts
-    auto attr_ts0 = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP_0,
+    H5::Attribute* attr_ts0 = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP_0,
                                       H5::PredType::NATIVE_INT,
                                       H5::DataSpace(H5S_SCALAR)));
     attr_ts0->write(H5::PredType::NATIVE_INT, &run_metadata.ts0);
 
-    auto attr_ts1 = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP_1,
+    H5::Attribute* attr_ts1 = new H5::Attribute(grp->createAttribute(META_DATA_TIMESTAMP_1,
                                       H5::PredType::NATIVE_INT,
                                       H5::DataSpace(H5S_SCALAR)));
     attr_ts1->write(H5::PredType::NATIVE_INT, &run_metadata.ts1);
 
     // date
-    auto attr_date0 = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME_0,
+    H5::Attribute* attr_date0 = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME_0,
                                         stype,
                                         H5::DataSpace(H5S_SCALAR)));
     attr_date0->write(stype, run_metadata.date0);
 
-    auto attr_date1 = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME_1,
+    H5::Attribute* attr_date1 = new H5::Attribute(grp->createAttribute(META_DATA_DATETIME_1,
                                         stype,
                                         H5::DataSpace(H5S_SCALAR)));
     attr_date1->write(stype, run_metadata.date1);
 
     // dt
-    auto attr_dt = new H5::Attribute(grp->createAttribute(META_DATA_ELAPSEDTIME,
+    H5::Attribute* attr_dt = new H5::Attribute(grp->createAttribute(META_DATA_ELAPSEDTIME,
                                       H5::PredType::NATIVE_INT,
                                       H5::DataSpace(H5S_SCALAR)));
     attr_dt->write(H5::PredType::NATIVE_INT, &run_metadata.dt);
 
     // ring format
     H5::StrType stype1(H5::PredType::C_S1, 6);
-    auto attr_fmt = new H5::Attribute(grp->createAttribute(META_DATA_RING_FORMAT,
+    H5::Attribute* attr_fmt = new H5::Attribute(grp->createAttribute(META_DATA_RING_FORMAT,
                                       stype1,
                                       H5::DataSpace(H5S_SCALAR)));
     attr_fmt->write(stype1, run_metadata.fmt);
 
     // total events
-    auto attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS,
+    H5::Attribute* attr_n_events = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_EVENTS,
                                            H5::PredType::NATIVE_LONG,
                                            H5::DataSpace(H5S_SCALAR)));
     attr_n_events->write(H5::PredType::NATIVE_LONG, &run_metadata.n_events);
 
     // total fragments
-    auto attr_n_frags = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_FRAGMENTS,
+    H5::Attribute* attr_n_frags = new H5::Attribute(grp->createAttribute(META_DATA_TOTAL_FRAGMENTS,
                                           H5::PredType::NATIVE_LONG,
                                           H5::DataSpace(H5S_SCALAR)));
     attr_n_frags->write(H5::PredType::NATIVE_LONG, &run_metadata.n_frags);
 
     // create a dataspace for fragments data
     hsize_t dim[] = {pfragdata->size()};
-    auto dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
+    H5::DataSpace* dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
 
     // create a dataset under the new group
-    auto dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
+    H5::DataSet* dset = new H5::DataSet(grp->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
 
     // write dataset: fragments
     dset->write(pfragdata->data(), frag_dtype);
+
+    // clean up
+    delete pfragdata;
 
     // trace data dataset
     long tracedata_cnt = ptracedata->size();
@@ -315,6 +318,9 @@ int main(int argc, char **argv) {
 
         current_row_id += nrows_sub;
     }
+
+    // clean up
+    delete ptracedata;
 
     // create mem data type for ScalerData
     const H5::CompType ddas_scaler_dtype(sizeof(DDASScalerData));
@@ -431,13 +437,37 @@ int main(int argc, char **argv) {
 
     // create a dataspace for scaler data
     hsize_t s_dim[] = {pddasscaler->size()};
-    auto s_dspace = new H5::DataSpace(SCALER_DATA_RANK, s_dim);
+    H5::DataSpace* s_dspace = new H5::DataSpace(SCALER_DATA_RANK, s_dim);
 
     // create a dataset under the new group
-    auto s_dset = new H5::DataSet(grp->createDataSet(SCALERS_DSET_NAME, ddas_scaler_dtype, *s_dspace));
+    H5::DataSet* s_dset = new H5::DataSet(grp->createDataSet(SCALERS_DSET_NAME, ddas_scaler_dtype, *s_dspace));
 
-    // write dataset: fragments
+    // write dataset: scalerdata
     s_dset->write(pddasscaler->data(), ddas_scaler_dtype);
+
+    // clean up
+    delete pscalerdata;
+    delete pscalerts;
+    delete pscalerlen;
+    delete pddasscaler;
+
+    //
+    delete attr_run_number;
+    delete attr_title;
+    delete attr_ts0;
+    delete attr_ts1;
+    delete attr_date0;
+    delete attr_date1;
+    delete attr_dt;
+    delete attr_fmt;
+    delete attr_n_events;
+    delete attr_n_frags;
+    delete dspace;
+    delete dset;
+    delete grp;
+    delete s_dspace;
+    delete s_dset;
+    delete h5file;
 
   } catch (H5::FileIException &error) {
     error.printErrorStack();

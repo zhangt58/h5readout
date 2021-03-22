@@ -98,9 +98,9 @@ const int SCALER_DATA_RANK = 1;
 // type for DDAS scaler data ()
 typedef struct DDASScalerData {
   time_t timestamp;
+  uint32_t slot_id;      // beginning at 2
   char datetime[80];
   uint32_t crate_id;
-  uint32_t slot_id;      // beginning at 2
   uint32_t inc_raw_ch00; // raw trigger incremental count at slot-id.ch0
   uint32_t inc_val_ch00; // validated trigger incremental count
   uint32_t inc_raw_ch01;

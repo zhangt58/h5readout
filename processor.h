@@ -18,18 +18,19 @@
 class CRingItemProcessor {
 public:
     virtual void processScalerItem(CRingScalerItem& item,
-                                   std::vector<time_t> *pscalerts,
-                                   std::vector<uint32_t> *pscalerlen,
-                                   std::vector<uint32_t> *pscalerdata,
+                                   std::vector<time_t> *pscalerts,      // scaler timestamp
+                                   std::vector<uint32_t> *pscalerlen,   // scaler length
+                                   std::vector<uint32_t> *pscalerdata,  // scaler array
                                    int& verbosity);
     virtual void processStateChangeItem(CRingStateChangeItem& item,
-                                        RunMetaData& run_meta,
+                                        RunMetaData& run_meta,          // meta data
                                         uint16_t& item_type);
     virtual void processTextItem(CRingTextItem& item, int& verbosity);
     virtual void processEvent(CPhysicsEventItem& item,
-                              uint64_t& event_id, uint64_t& frag_cnt,
-                              std::vector<FragmentData> *pfragdata,
-                              std::vector<uint16_t> *ptracedata,
+                              uint64_t& event_id,                       // physics event id
+                              uint64_t& frag_cnt,                       // accumulated fragments
+                              std::vector<FragmentData> *pfragdata,     // all FragmentData
+                              std::vector<uint16_t> *ptracedata,        // all tracedata
                               int& verbosity);
     virtual void processEventCount(CRingPhysicsEventCountItem& item);
     virtual void processFormat(CDataFormatItem& item, RunMetaData& run_meta);

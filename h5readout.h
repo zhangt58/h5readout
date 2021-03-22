@@ -11,7 +11,7 @@
 #include "H5Cpp.h"     // HDF5
 
 // version
-const std::string VERSION = "1.4";
+const std::string VERSION = "2.0";
 
 // type for run meta
 typedef struct RunMetaData {

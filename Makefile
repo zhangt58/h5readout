@@ -17,7 +17,6 @@ DAQPATH=/usr/lib/nscldaq
 DDASPATH=/usr/lib/opt/ddas
 HDF5PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
 
-#CXXOPTPATH=./cxxopts_dd45a08/include
 CXXOPTPATH=./argh_d9964d4
 
 INC = -I$(DAQPATH)/include

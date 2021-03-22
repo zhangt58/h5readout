@@ -176,14 +176,14 @@ void ArgumentParser::print_all_args() {
  */
 void ArgumentParser::print_examples() {
     std::cout << "Examples:" << "\n"
-              << "  # Default output h5 filepath:\n"
-              << "  " << m_prog << " /home/devuser/data.evt # output /home/devuser/data.h5\n"
-              << "  # Default output h5 filepath, to a directory:\n"
-              << "  " << m_prog << " /home/devuser/data.evt -o /home/devuser/h5data\n"
-              << "  # Output h5 file w/o compression:\n"
-              << "  " << m_prog << " /home/devuser/data.evt -c none\n"
-              << "  # Output h5 file w/ szip compression:\n"
-              << "  " << m_prog << " /home/devuser/data.evt -c szip"
+              << "  1-Default output h5 filepath:\n"
+              << "  $ " << m_prog << " /home/devuser/data.evt # output /home/devuser/data.h5\n"
+              << "  2-Default output h5 filepath, to a directory:\n"
+              << "  $ " << m_prog << " /home/devuser/data.evt -o /home/devuser/h5data\n"
+              << "  3-Output h5 file w/o compression:\n"
+              << "  $ " << m_prog << " /home/devuser/data.evt -c none\n"
+              << "  4-Output h5 file w/ szip compression:\n"
+              << "  $ " << m_prog << " /home/devuser/data.evt -c szip"
               << std::endl;
 }
 
@@ -198,8 +198,9 @@ void ArgumentParser::print_help() {
     printf("  %-28s   %s\n", "-n, --events arg", "Maximum number of physics events to readout");
     printf("  %-28s   %s\n", "", std::string("(default: " + std::to_string(INT_MAX) + ")").c_str());
     printf("  %-28s   %s\n", "-s, --chunk-size arg", "Chunk size MxN for HDF5 data (default: 0x0)");
-    printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip' (default: gzip)");
-    printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level(0-9) (default: 8)");
+    printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip'");
+    printf("  %-28s   %s\n", "", "(default: gzip)");
+    printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level (0-9) (default: 8)");
     printf("  %-28s   %s\n", "-v, --verbose arg", "Level of verbosity (0-2) (default: 0)");
     printf("  %-28s   %s\n", "", "1: Show Scaler info");
     printf("  %-28s   %s\n", "", "2: Show Scaler and Event info");

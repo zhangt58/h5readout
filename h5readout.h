@@ -43,7 +43,7 @@ const std::string META_DATA_DATETIME_1("End_Datetime");         // char[80]
 const std::string META_DATA_TOTAL_EVENTS("Total_Events");       // uint64_t
 const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
 const std::string META_DATA_RING_FORMAT("Ring_Format");         // char[6]
-const std::string META_DATA_STYPE("Data_Source");               // char[6]
+const std::string META_DATA_STYPE("Source_Type");               // char[6]
 
 // type for physics fragment data
 typedef struct FragmentData

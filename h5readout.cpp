@@ -56,6 +56,8 @@ void ArgumentParser::init_options()
 
 std::string ArgumentParser::get_source_type()
 {
+    std::transform(m_stype.begin(), m_stype.end(), m_stype.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
     return m_stype;
 }
 
@@ -480,11 +482,11 @@ bool write_scalerdata(std::vector<uint32_t> *pscalerdata, H5::Group *group,
                       std::string &stype)
 {
     bool r;
-    if (stype == "ddas")
+    if (stype == "DDAS")
     {
         r = _write_ddas_scalerdata(pscalerdata, group, pscalerlen, pscalerts);
     }
-    else if (stype == "vme")
+    else if (stype == "VME")
     {
         r = _write_vme_scalerdata(pscalerdata, group, pscalerlen, pscalerts);
     }

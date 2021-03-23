@@ -79,8 +79,8 @@ int main(int argc, char **argv)
   // Ring Item types that can be sampled
   std::vector<std::uint16_t> sample;
   // Ring Item types that can be filtered out
-  // std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
-  std::vector<std::uint16_t> exclude = {PHYSICS_EVENT};
+  std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
+  // std::vector<std::uint16_t> exclude = {PHYSICS_EVENT};
 
   CDataSource *data_source;
   try
@@ -161,23 +161,19 @@ int main(int argc, char **argv)
     // create an h5 file handle
     H5::H5File *h5file = new H5::H5File(output_filepath, H5F_ACC_TRUNC);
 
-    // create a new group "PhysicsEvent"
-    H5::Group *grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
-
-    // create a dataspace for fragments data
-    std::cout << "fragdata size: " << pfragdata->size() << "\n";
-    std::cout << "tracedata size: " << ptracedata->size() << "\n";
-    std::cout << "scalerdata size: " << pscalerdata->size() << "\n";
+    // create groups for events and scalers
+    H5::Group *evt_grp = new H5::Group(h5file->createGroup(PHYSICS_EVENT_GROUP_NAME));
+    H5::Group *scl_grp = new H5::Group(h5file->createGroup(SCALER_GROUP_NAME));
 
     // meta data
-    bool meta_is_written = write_metadata(run_metadata, grp);
+    bool meta_is_written = write_metadata(run_metadata, h5file);
     if (meta_is_written)
     {
       fprintf(stdout, "Writing meta data is done.\n");
     }
 
     // fragment data
-    bool frag_is_written = write_fragdata(pfragdata, grp);
+    bool frag_is_written = write_fragdata(pfragdata, evt_grp);
     if (frag_is_written)
     {
       fprintf(stdout, "Writing fragment data is done.\n");
@@ -191,20 +187,21 @@ int main(int argc, char **argv)
       fprintf(stdout, "Total fragments: %i (%g KB)\n", frag_cnt, (float)(frag_cnt * sizeof(FragmentData) / 1024));
     }
 
-    bool trace_is_written = write_tracedata(ptracedata, grp, frag_cnt, chunk_dims, comp_meth, gfactor);
+    bool trace_is_written = write_tracedata(ptracedata, evt_grp, frag_cnt, chunk_dims, comp_meth, gfactor);
     if (trace_is_written)
     {
       fprintf(stdout, "Writing trace data is done.\n");
     }
 
-    bool scaler_is_written = write_scalerdata(pscalerdata, grp, pscalerlen, pscalerts, stype);
+    bool scaler_is_written = write_scalerdata(pscalerdata, scl_grp, pscalerlen, pscalerts, stype);
     if (scaler_is_written)
     {
       fprintf(stdout, "Writing scaler data is done.\n");
     }
 
     // clean up
-    delete grp;
+    delete evt_grp;
+    delete scl_grp;
     delete h5file;
   }
   catch (H5::FileIException &error)

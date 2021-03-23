@@ -83,13 +83,27 @@ const std::string FRAGMENT_DATA_ADC_OVER_UNDER_FLOW("Err_ADC_Saturation"); // ui
 const std::string FRAGMENT_DATA_FRAGMENT_ID("Fragment_ID"); // uint64_t
 const std::string FRAGMENT_DATA_EVENT_ID("Event_ID");       // uint64_t
 
-// group name for DDAS Data
-const std::string PHYSICS_EVENT_GROUP_NAME("DDAS_Data");
+// group name for physics event data
+const std::string PHYSICS_EVENT_GROUP_NAME("Events");
 
-// dataset names under DDAS_Data group
-const std::string FRAGMENTS_DSET_NAME("Fragments");
-const std::string TRACES_DSET_NAME("Traces");
-const std::string SCALERS_DSET_NAME("Scalers");
+// dataset names under physics event data group
+const std::string FRAGMENTS_DSET_NAME("FragmentData");
+const std::string TRACES_DSET_NAME("TraceData");
+
+// group name for scaler data
+const std::string SCALER_GROUP_NAME("Scalers");
+const std::string SCALERS_DSET_NAME("ScalerData");
+
+/*
+H5 data structure:
+ / (root group)
+ /attr: metadata
+ /Events # physics events
+  - FragmentData (dataset)
+  - TraceData (dataset)
+/Scalers # scalers
+  - ScalerData (dataset)
+*/
 
 // fragment data rank
 const int FRAGMENT_DATA_RANK = 1;
@@ -219,14 +233,6 @@ const std::string SCALER_VAL_CH14("Val_Ch14");   //uint32_t
 const std::string SCALER_RAW_CH15("Raw_Ch15");   //uint32_t
 const std::string SCALER_VAL_CH15("Val_Ch15");   //uint32_t
 
-/*
-data structure:
- / (root group)
- /DDAS_Data
-  - Fragments (dataset)
-  - Traces (dataset)
-  - Scalers (dataset)
-*/
 
 /**
  * Argument parser
@@ -330,7 +336,7 @@ private:
  * write_metadata: Write metadata.
  * 
  */
-bool write_metadata(RunMetaData &metadata, H5::Group *group);
+bool write_metadata(RunMetaData &metadata, H5::H5File *group);
 
 /**
  * write_fragdata: Write fragment data

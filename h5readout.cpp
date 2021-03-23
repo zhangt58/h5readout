@@ -253,7 +253,7 @@ void ArgumentParser::print_help()
     printf("  %-28s   %s\n", "-h, --help", "Print this message");
 }
 
-bool write_metadata(RunMetaData &metadata, H5::Group *group)
+bool write_metadata(RunMetaData &metadata, H5::H5File *group)
 {
     // run number
     H5::Attribute *number = new H5::Attribute(group->createAttribute(META_DATA_RUN_NUMBER,

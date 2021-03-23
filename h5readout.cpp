@@ -303,6 +303,12 @@ bool write_metadata(RunMetaData &metadata, H5::H5File *group)
                                                                   H5::DataSpace(H5S_SCALAR)));
     fmt->write(stype1, metadata.fmt);
 
+    // source type
+    H5::Attribute *src_type = new H5::Attribute(group->createAttribute(META_DATA_STYPE,
+                                                                       stype1,
+                                                                       H5::DataSpace(H5S_SCALAR)));
+    src_type->write(stype1, metadata.stype);
+
     // total events
     H5::Attribute *n_events = new H5::Attribute(group->createAttribute(META_DATA_TOTAL_EVENTS,
                                                                        H5::PredType::NATIVE_LONG,

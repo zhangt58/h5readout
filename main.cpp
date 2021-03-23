@@ -142,12 +142,14 @@ int main(int argc, char **argv)
   // update metadata
   run_metadata.n_frags = frag_cnt;
   run_metadata.n_events = event_id;
+  strcpy(run_metadata.stype, stype.c_str());
   std::cout << "Run #: " << run_metadata.number << "\n"
             << " Title: " << run_metadata.title << "\n"
             << " Begin: " << run_metadata.date0 << "\n"
             << " End: " << run_metadata.date1 << "\n"
             << " Duration: " << run_metadata.dt << "\n"
             << " Ring Format: " << run_metadata.fmt << "\n"
+            << " Data Source: " << run_metadata.stype << "\n"
             << " Read physics events: " << run_metadata.n_events << "\n"
             << " Read fragments: " << run_metadata.n_frags
             << std::endl;

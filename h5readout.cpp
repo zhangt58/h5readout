@@ -5,6 +5,7 @@
 
 #include "misc.h"
 #include "h5readout.h"
+#include "processor.h"
 
 ArgumentParser::ArgumentParser()
 {
@@ -17,6 +18,7 @@ ArgumentParser::ArgumentParser()
 ArgumentParser::~ArgumentParser()
 {
     delete m_chunk_dims;
+    delete m_exclude_types;
 }
 
 std::string ArgumentParser::get_progname()
@@ -44,6 +46,7 @@ void ArgumentParser::init_options()
                          "-t", "--source-type",
                          "-v", "--verbose",
                          "-h", "--help",
+                         "--exclude",
                          "--version"});
     m_default_params["output"] = "<input>.h5";
     m_default_params["events"] = std::to_string(INT_MAX);
@@ -52,6 +55,12 @@ void ArgumentParser::init_options()
     m_default_params["compress-level"] = std::to_string(8);
     m_default_params["source-type"] = "ddas";
     m_default_params["verbosity"] = std::to_string(0);
+    m_default_params["exclude"] = "";
+}
+
+std::vector<uint16_t> *ArgumentParser::get_exclude_types()
+{
+    return m_exclude_types;
 }
 
 std::string ArgumentParser::get_source_type()
@@ -81,6 +90,18 @@ void ArgumentParser::parse(int argc, char **argv)
         m_chunk_dims[idx++] = i;
         if (ss.peek() == 'x')
             ss.ignore();
+    }
+
+    // exclude type list
+    std::string buf;
+    std::stringstream ss1(m_parser("exclude", get_default("exclude")).str());
+    while (getline(ss1, buf, ','))
+    {
+        auto it = ITEM_TYPE.find(buf);
+        if (it != ITEM_TYPE.end())
+        {
+            m_exclude_types->push_back(it->second);
+        }
     }
 
     // max event number
@@ -210,6 +231,13 @@ void ArgumentParser::print_all_args()
               << "Verbose level : " << get_verbosity() << "\n"
               << "Show version? : " << print_version_if_possible() << "\n"
               << "Show help? : " << print_help_if_possible() << "\n";
+
+    std::cout << "Exclude types: ";
+    for (std::vector<uint16_t>::iterator it = m_exclude_types->begin(); it != m_exclude_types->end(); ++it)
+    {
+        std::cout << *it << ",";
+    }
+    std::cout << std::endl;
 }
 
 /**
@@ -227,7 +255,9 @@ void ArgumentParser::print_examples()
               << "  3-Output h5 file w/o compression:\n"
               << "  $ " << m_prog << " /home/devuser/data.evt -c none\n"
               << "  4-Output h5 file w/ szip compression:\n"
-              << "  $ " << m_prog << " /home/devuser/data.evt -c szip"
+              << "  $ " << m_prog << " /home/devuser/data.evt -c szip\n"
+              << "  5-Skip parsing physics events:\n"
+              << "  $ " << m_prog << " data.evt --exclude PHYSICS_EVENT"
               << std::endl;
 }
 
@@ -247,6 +277,9 @@ void ArgumentParser::print_help()
     printf("  %-28s   %s\n", "", "(default: gzip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level (0-9) (default: 8)");
     printf("  %-28s   %s\n", "-t, --source-type arg", "Type of data source, 'ddas' (default), 'vme'");
+    printf("  %-28s   %s\n", "    --exclude arg", "A string of ringitem types to skip, separated by ','");
+    printf("  %-28s   %s\n", "", "e.g. PHYSICS_EVENT (skip events), or PERIODIC_SCALERS,PHYSICS_EVENT");
+    printf("  %-28s   %s\n", "", "(skip scalers and events), by default is empty");
     printf("  %-28s   %s\n", "-v, --verbose arg", "Level of verbosity (0-2) (default: 0)");
     printf("  %-28s   %s\n", "", "1: Show Scaler info");
     printf("  %-28s   %s\n", "", "2: Show Scaler and Event info");

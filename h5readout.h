@@ -235,7 +235,6 @@ const std::string SCALER_VAL_CH14("Val_Ch14");   //uint32_t
 const std::string SCALER_RAW_CH15("Raw_Ch15");   //uint32_t
 const std::string SCALER_VAL_CH15("Val_Ch15");   //uint32_t
 
-
 /**
  * Argument parser
  *
@@ -310,6 +309,9 @@ public:
   // data source type
   std::string get_source_type();
 
+  // exclude item type(s)
+  std::vector<uint16_t> *get_exclude_types();
+
 private:
   std::string m_prog;
   std::string m_progname;
@@ -322,6 +324,8 @@ private:
   std::string m_comp_method;
   hsize_t *m_chunk_dims;
   uint64_t m_max_evt;
+
+  std::vector<uint16_t> *m_exclude_types = new std::vector<uint16_t>();
 
   int m_verbosity;
 

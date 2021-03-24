@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 #include <CDataFormatItem.h>
 #include <CRingItem.h>
@@ -54,3 +55,10 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
                      std::vector<uint32_t> *pscalerlen,
                      std::vector<uint32_t> *pscalerdata,
                      int& verbosity);
+
+
+static std::unordered_map<std::string, uint16_t> const ITEM_TYPE = {
+    {"PHYSICS_EVENT", PHYSICS_EVENT},
+    {"PERIODIC_SCALERS", PERIODIC_SCALERS},
+    {"EVB_GLOM_INFO", EVB_GLOM_INFO}
+};

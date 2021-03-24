@@ -73,14 +73,17 @@ int main(int argc, char **argv)
   // data source type
   std::string stype = argparser.get_source_type();
 
+  // exclude type list
+  std::vector<uint16_t> *pexclude = argparser.get_exclude_types();
+
   // debug
   // argparser.print_all_args();
 
   // Ring Item types that can be sampled
   std::vector<std::uint16_t> sample;
   // Ring Item types that can be filtered out
-  std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
-  // std::vector<std::uint16_t> exclude = {PHYSICS_EVENT};
+  // std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
+  std::vector<std::uint16_t> exclude = {pexclude->begin(), pexclude->end()};
 
   CDataSource *data_source;
   try
@@ -182,12 +185,12 @@ int main(int argc, char **argv)
     }
 
     // trace data dataset
-    long tracedata_cnt = ptracedata->size();
-    if (tracedata_cnt != 0)
-    { // skip PHYSICS_EVENT
-      fprintf(stdout, "Trace data size: %i (%g KB)\n", tracedata_cnt, (float)(tracedata_cnt * sizeof(uint16_t) / 1024));
-      fprintf(stdout, "Total fragments: %i (%g KB)\n", frag_cnt, (float)(frag_cnt * sizeof(FragmentData) / 1024));
-    }
+    // long tracedata_cnt = ptracedata->size();
+    // if (tracedata_cnt != 0)
+    // { // skip PHYSICS_EVENT
+    //   fprintf(stdout, "Trace data size: %i (%g KB)\n", tracedata_cnt, (float)(tracedata_cnt * sizeof(uint16_t) / 1024));
+    //   fprintf(stdout, "Total fragments: %i (%g KB)\n", frag_cnt, (float)(frag_cnt * sizeof(FragmentData) / 1024));
+    // }
 
     bool trace_is_written = write_tracedata(ptracedata, evt_grp, frag_cnt, chunk_dims, comp_meth, gfactor);
     if (trace_is_written)
@@ -232,7 +235,7 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  fprintf(stdout, "Read and write %i fragments in %i events in total.\n", frag_cnt, event_id);
+  // fprintf(stdout, "Read and write %i fragments in %i events in total.\n", frag_cnt, event_id);
 
   return EXIT_SUCCESS;
 }

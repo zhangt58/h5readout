@@ -50,7 +50,7 @@ void processRingItem(CRingItemProcessor& processor, CRingItem* item,
             }
         case PHYSICS_EVENT:
             {
-            // each event data goes to one group named "Event<event_id>" under root
+                // count events
                 CPhysicsEventItem& phy_item = dynamic_cast<CPhysicsEventItem &>(*castableItem);
                 processor.processEvent(phy_item, event_id, frag_cnt, pfragdata, ptracedata, verbosity);
                 event_id++;

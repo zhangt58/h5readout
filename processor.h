@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <set>
 
 #include <CDataFormatItem.h>
 #include <CRingItem.h>
@@ -61,4 +62,9 @@ static std::unordered_map<std::string, uint16_t> const ITEM_TYPE = {
     {"PHYSICS_EVENT", PHYSICS_EVENT},
     {"PERIODIC_SCALERS", PERIODIC_SCALERS},
     {"EVB_GLOM_INFO", EVB_GLOM_INFO}
+};
+
+// supported VME modules
+static std::set<std::string> const VME_MODULES = {
+    "V785"
 };

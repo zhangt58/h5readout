@@ -73,11 +73,16 @@ int main(int argc, char **argv)
   // controller type
   std::string ctrl_type = argparser.get_ctrl_type();
 
+  if (ctrl_type != "DDAS")
+  {
+    std::vector<std::string> *module_list = argparser.get_module_list();
+  }
+
   // exclude type list
   std::vector<uint16_t> *pexclude = argparser.get_exclude_types();
 
   // debug
-  // argparser.print_all_args();
+  argparser.print_all_args();
 
   // Ring Item types that can be sampled
   std::vector<std::uint16_t> sample;

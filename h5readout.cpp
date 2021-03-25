@@ -19,6 +19,7 @@ ArgumentParser::~ArgumentParser()
 {
     delete m_chunk_dims;
     delete m_exclude_types;
+    delete m_module_list;
 }
 
 std::string ArgumentParser::get_progname()
@@ -44,6 +45,7 @@ void ArgumentParser::init_options()
                          "-c", "--compress",
                          "--compress-level",
                          "-t", "--source-type",
+                         "-m", "--modules",
                          "-v", "--verbose",
                          "-h", "--help",
                          "--exclude",
@@ -56,6 +58,12 @@ void ArgumentParser::init_options()
     m_default_params["source-type"] = "ddas";
     m_default_params["verbosity"] = std::to_string(0);
     m_default_params["exclude"] = "";
+    m_default_params["modules"] = "";
+}
+
+std::vector<std::string> *ArgumentParser::get_module_list()
+{
+    return m_module_list;
 }
 
 std::vector<uint16_t> *ArgumentParser::get_exclude_types()
@@ -101,6 +109,17 @@ void ArgumentParser::parse(int argc, char **argv)
         if (it != ITEM_TYPE.end())
         {
             m_exclude_types->push_back(it->second);
+        }
+    }
+
+    // module list
+    std::stringstream ss2(m_parser("modules", get_default("modules")).str());
+    while (getline(ss2, buf, ','))
+    {
+        auto it = VME_MODULES.find(buf);
+        if (it != VME_MODULES.end())
+        {
+            m_module_list->push_back(*it);
         }
     }
 
@@ -238,6 +257,13 @@ void ArgumentParser::print_all_args()
         std::cout << *it << ",";
     }
     std::cout << std::endl;
+
+    std::cout << "Modules: ";
+    for (auto it = m_module_list->begin(); it != m_module_list->end(); ++it)
+    {
+        std::cout << *it << ",";
+    }
+    std::cout << std::endl;
 }
 
 /**
@@ -277,6 +303,8 @@ void ArgumentParser::print_help()
     printf("  %-28s   %s\n", "", "(default: gzip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level (0-9) (default: 8)");
     printf("  %-28s   %s\n", "-t, --controller-type arg", "Type of device controller, 'ddas' (default), 'vme'");
+    printf("  %-28s   %s\n", "-m, --modules arg", "A string of VME modules to read, separated by ','");
+    printf("  %-28s   %s\n", "", "only required when controller type is not DDAS");
     printf("  %-28s   %s\n", "    --exclude arg", "A string of ringitem types to skip, separated by ','");
     printf("  %-28s   %s\n", "", "e.g. PHYSICS_EVENT (skip events), or PERIODIC_SCALERS,PHYSICS_EVENT");
     printf("  %-28s   %s\n", "", "(skip scalers and events), by default is empty");
@@ -340,8 +368,8 @@ bool write_metadata(RunMetaData &metadata, H5::H5File *group)
 
     // controller type
     H5::Attribute *ctrl_type = new H5::Attribute(group->createAttribute(META_DATA_CTRL_TYPE,
-                                                                       stype1,
-                                                                       H5::DataSpace(H5S_SCALAR)));
+                                                                        stype1,
+                                                                        H5::DataSpace(H5S_SCALAR)));
     ctrl_type->write(stype1, metadata.ctrl_type);
 
     // total events

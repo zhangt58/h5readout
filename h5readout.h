@@ -309,6 +309,9 @@ public:
   // controller type, DDAS or VME
   std::string get_ctrl_type();
 
+  // module list for VME
+  std::vector<std::string> *get_module_list();
+
   // exclude item type(s)
   std::vector<uint16_t> *get_exclude_types();
 
@@ -326,6 +329,7 @@ private:
   uint64_t m_max_evt;
 
   std::vector<uint16_t> *m_exclude_types = new std::vector<uint16_t>();
+  std::vector<std::string> *m_module_list = new std::vector<std::string>();
 
   int m_verbosity;
 

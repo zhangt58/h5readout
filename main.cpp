@@ -73,10 +73,7 @@ int main(int argc, char **argv)
   // controller type
   std::string ctrl_type = argparser.get_ctrl_type();
 
-  if (ctrl_type != "DDAS")
-  {
-    std::vector<std::string> *module_list = argparser.get_module_list();
-  }
+  std::vector<std::string> *module_list = argparser.get_module_list();
 
   // exclude type list
   std::vector<uint16_t> *pexclude = argparser.get_exclude_types();
@@ -138,7 +135,8 @@ int main(int argc, char **argv)
       processRingItem(processor, pItem, run_metadata, event_id, frag_cnt,
                       pfragdata, ptracedata,
                       pscalerts, pscalerlen, pscalerdata,
-                      verbosity);
+                      verbosity,
+                      ctrl_type, module_list);
     }
   }
   catch (CErrnoException &ex)

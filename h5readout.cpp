@@ -55,7 +55,7 @@ void ArgumentParser::init_options()
     m_default_params["chunk-size"] = "0x0";
     m_default_params["compress"] = "gzip";
     m_default_params["compress-level"] = std::to_string(8);
-    m_default_params["source-type"] = "ddas";
+    m_default_params["controller-type"] = "ddas";
     m_default_params["verbosity"] = std::to_string(0);
     m_default_params["exclude"] = "";
     m_default_params["modules"] = "";

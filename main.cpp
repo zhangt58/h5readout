@@ -70,8 +70,8 @@ int main(int argc, char **argv)
   // verbosity level
   int verbosity = argparser.get_verbosity();
 
-  // data source type
-  std::string stype = argparser.get_source_type();
+  // controller type
+  std::string ctrl_type = argparser.get_ctrl_type();
 
   // exclude type list
   std::vector<uint16_t> *pexclude = argparser.get_exclude_types();
@@ -145,14 +145,14 @@ int main(int argc, char **argv)
   // update metadata
   run_metadata.n_frags = frag_cnt;
   run_metadata.n_events = event_id;
-  strcpy(run_metadata.stype, stype.c_str());
+  strcpy(run_metadata.ctrl_type, ctrl_type.c_str());
   std::cout << "Run #: " << run_metadata.number << "\n"
             << " Title: " << run_metadata.title << "\n"
             << " Begin: " << run_metadata.date0 << "\n"
             << " End: " << run_metadata.date1 << "\n"
             << " Duration: " << run_metadata.dt << "\n"
             << " Ring Format: " << run_metadata.fmt << "\n"
-            << " Data Source: " << run_metadata.stype << "\n"
+            << " Controller: " << run_metadata.ctrl_type << "\n"
             << " Read physics events: " << run_metadata.n_events << "\n"
             << " Read fragments: " << run_metadata.n_frags
             << std::endl;
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
       fprintf(stdout, "Writing trace data is done.\n");
     }
 
-    bool scaler_is_written = write_scalerdata(pscalerdata, scl_grp, pscalerlen, pscalerts, stype);
+    bool scaler_is_written = write_scalerdata(pscalerdata, scl_grp, pscalerlen, pscalerts, ctrl_type);
     if (scaler_is_written)
     {
       fprintf(stdout, "Writing scaler data is done.\n");

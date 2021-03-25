@@ -63,11 +63,11 @@ std::vector<uint16_t> *ArgumentParser::get_exclude_types()
     return m_exclude_types;
 }
 
-std::string ArgumentParser::get_source_type()
+std::string ArgumentParser::get_ctrl_type()
 {
-    std::transform(m_stype.begin(), m_stype.end(), m_stype.begin(),
+    std::transform(m_ctrl_type.begin(), m_ctrl_type.end(), m_ctrl_type.begin(),
                    [](unsigned char c) { return std::toupper(c); });
-    return m_stype;
+    return m_ctrl_type;
 }
 
 void ArgumentParser::parse(int argc, char **argv)
@@ -111,7 +111,7 @@ void ArgumentParser::parse(int argc, char **argv)
     m_parser({"v", "verbose"}, get_default("verbosity")) >> m_verbosity;
 
     // source type
-    m_parser({"t", "source-type"}, get_default("source-type")) >> m_stype;
+    m_parser({"t", "controller-type"}, get_default("controller-type")) >> m_ctrl_type;
 
     // input data source
     m_parser(1) >> m_ifname; // first positional arg
@@ -222,7 +222,7 @@ void ArgumentParser::print_all_args()
     hsize_t *pdim = get_chunk_dims();
     std::cout << "Input data source: " << get_input_data_source() << "\n"
               << "Input data source (URI): " << get_input_data_source_as_uri() << "\n"
-              << "Input data source type: " << get_source_type() << "\n"
+              << "Device controller type: " << get_ctrl_type() << "\n"
               << "Output data path: " << get_output_filepath() << "\n"
               << "Max physics events: " << get_max_evt() << "\n"
               << "Chunk dims: " << pdim[0] << "x" << pdim[1] << "\n"
@@ -276,7 +276,7 @@ void ArgumentParser::print_help()
     printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip'");
     printf("  %-28s   %s\n", "", "(default: gzip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level (0-9) (default: 8)");
-    printf("  %-28s   %s\n", "-t, --source-type arg", "Type of data source, 'ddas' (default), 'vme'");
+    printf("  %-28s   %s\n", "-t, --controller-type arg", "Type of device controller, 'ddas' (default), 'vme'");
     printf("  %-28s   %s\n", "    --exclude arg", "A string of ringitem types to skip, separated by ','");
     printf("  %-28s   %s\n", "", "e.g. PHYSICS_EVENT (skip events), or PERIODIC_SCALERS,PHYSICS_EVENT");
     printf("  %-28s   %s\n", "", "(skip scalers and events), by default is empty");
@@ -338,11 +338,11 @@ bool write_metadata(RunMetaData &metadata, H5::H5File *group)
                                                                   H5::DataSpace(H5S_SCALAR)));
     fmt->write(stype1, metadata.fmt);
 
-    // source type
-    H5::Attribute *src_type = new H5::Attribute(group->createAttribute(META_DATA_STYPE,
+    // controller type
+    H5::Attribute *ctrl_type = new H5::Attribute(group->createAttribute(META_DATA_CTRL_TYPE,
                                                                        stype1,
                                                                        H5::DataSpace(H5S_SCALAR)));
-    src_type->write(stype1, metadata.stype);
+    ctrl_type->write(stype1, metadata.ctrl_type);
 
     // total events
     H5::Attribute *n_events = new H5::Attribute(group->createAttribute(META_DATA_TOTAL_EVENTS,

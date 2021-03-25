@@ -29,7 +29,7 @@ typedef struct RunMetaData
   char fmt[6];       // ring format
   uint64_t n_events; // total events
   uint64_t n_frags;  // total fragments
-  char stype[6];     // data source type
+  char ctrl_type[6]; // device controller type
 } RunMetaData;
 
 // runmetadata compound data type
@@ -43,7 +43,7 @@ const std::string META_DATA_DATETIME_1("End_Datetime");         // char[80]
 const std::string META_DATA_TOTAL_EVENTS("Total_Events");       // uint64_t
 const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
 const std::string META_DATA_RING_FORMAT("Ring_Format");         // char[6]
-const std::string META_DATA_STYPE("Source_Type");               // char[6]
+const std::string META_DATA_CTRL_TYPE("Controller");            // char[6]
 
 // type for physics fragment data
 typedef struct FragmentData
@@ -306,8 +306,8 @@ public:
   std::string get_progname();
   std::string get_progdesc();
 
-  // data source type
-  std::string get_source_type();
+  // controller type, DDAS or VME
+  std::string get_ctrl_type();
 
   // exclude item type(s)
   std::vector<uint16_t> *get_exclude_types();
@@ -329,7 +329,7 @@ private:
 
   int m_verbosity;
 
-  std::string m_stype;
+  std::string m_ctrl_type;
   std::string m_ifname;
   std::string m_ofname;
   std::string m_ifname_full;

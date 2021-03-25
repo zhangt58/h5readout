@@ -53,7 +53,7 @@ void ArgumentParser::init_options()
     m_default_params["output"] = "<input>.h5";
     m_default_params["events"] = std::to_string(INT_MAX);
     m_default_params["chunk-size"] = "0x0";
-    m_default_params["compress"] = "gzip";
+    m_default_params["compress"] = "szip";
     m_default_params["compress-level"] = std::to_string(8);
     m_default_params["controller-type"] = "ddas";
     m_default_params["verbosity"] = std::to_string(0);
@@ -300,7 +300,7 @@ void ArgumentParser::print_help()
     printf("  %-28s   %s\n", "", std::string("(default: " + std::to_string(INT_MAX) + ")").c_str());
     printf("  %-28s   %s\n", "-s, --chunk-size arg", "Chunk size MxN for HDF5 data (default: 0x0)");
     printf("  %-28s   %s\n", "-c, --compress arg", "Compression method, 'szip' or 'gzip'");
-    printf("  %-28s   %s\n", "", "(default: gzip)");
+    printf("  %-28s   %s\n", "", "(default: szip)");
     printf("  %-28s   %s\n", "    --compress-level arg", "GZip Compression level (0-9) (default: 8)");
     printf("  %-28s   %s\n", "-t, --controller-type arg", "Type of device controller, 'ddas' (default), 'vme'");
     printf("  %-28s   %s\n", "-m, --modules arg", "A string of VME modules to read, separated by ','");

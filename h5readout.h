@@ -7,11 +7,12 @@
 #include <string>
 #include <iostream>
 
-#include "argh.h"  // args parser
-#include "H5Cpp.h" // HDF5
+#include "argh.h"    // args parser
+#include "H5Cpp.h"   // HDF5
+#include "modules.h" // VME modules
 
 // version
-const std::string VERSION = "2.0";
+const std::string APP_VERSION = "2.0";
 
 // rows of trace data written at once.
 const int T_NROWS_PER_WRITE = 1;
@@ -45,7 +46,7 @@ const std::string META_DATA_TOTAL_FRAGMENTS("Total_Fragments"); // uint64_t
 const std::string META_DATA_RING_FORMAT("Ring_Format");         // char[6]
 const std::string META_DATA_CTRL_TYPE("Controller");            // char[6]
 
-// type for physics fragment data
+// type for physics fragment data (DDAS)
 typedef struct FragmentData
 {
   uint64_t fragment_id;
@@ -355,6 +356,13 @@ bool write_metadata(RunMetaData &metadata, H5::H5File *group);
 bool write_fragdata(std::vector<FragmentData> *pfragdata, H5::Group *group);
 
 /**
+ * write_fragdata_vme: Write fragment data
+ *  
+ */
+bool write_fragdata_vme(std::vector<uint64_t> *pfragdata, H5::Group *group,
+                        uint64_t &frag_cnt, std::string &comp_meth, int &gfactor);
+
+/**
  * write_tracedata: Write trace data
  * 
  */
@@ -374,3 +382,14 @@ bool _write_ddas_scalerdata(std::vector<uint32_t> *pscalerdata, H5::Group *group
 
 bool _write_vme_scalerdata(std::vector<uint32_t> *pscalerdata, H5::Group *group,
                            std::vector<uint32_t> *pscalerlen, std::vector<time_t> *pscalerts);
+
+// VME V785 fragmentdata
+const std::string V785_FRAGMENT_DATA_FRAG_ID("Fragment_ID");     // uint64_t
+const std::string V785_FRAGMENT_DATA_EVENT_ID("Event_ID");       // uint64_t
+const std::string V785_FRAGMENT_DATA_GEO("GEO");                 // uint16_t
+const std::string V785_FRAGMENT_DATA_CRATE_ID("Crate_ID");       // uint16_t
+const std::string V785_FRAGMENT_DATA_TOTAL_CHANNELS("Channels"); // uint16_t
+const std::string V785_FRAGMENT_DATA_CHANNEL_ID("Channel_ID");   // uint16_t
+const std::string V785_FRAGMENT_DATA_VALUE("Value");             // uint16_t
+const std::string V785_FRAGMENT_DATA_OVERFLOW("Overflow");       // uint16_t
+const std::string V785_FRAGMENT_DATA_THRESHOLD("Threshold");     // uint16_t

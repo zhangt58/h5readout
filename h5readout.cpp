@@ -164,14 +164,14 @@ int ArgumentParser::get_verbosity()
 
 std::string ArgumentParser::get_version()
 {
-    return VERSION;
+    return APP_VERSION;
 }
 
 bool ArgumentParser::print_version_if_possible()
 {
     if (m_parser["version"])
     {
-        std::cout << VERSION << std::endl;
+        std::cout << APP_VERSION << std::endl;
         return true;
     }
     return false;
@@ -849,5 +849,149 @@ bool _write_vme_scalerdata(std::vector<uint32_t> *pscalerdata, H5::Group *group,
     delete s_dset;
 
     //
+    return true;
+}
+
+bool write_fragdata_vme(std::vector<uint64_t> *pfragdata, H5::Group *group,
+                        uint64_t &frag_cnt, std::string &comp_meth, int &gfactor)
+{
+    hsize_t dsize = pfragdata->size();
+    if (dsize == 0)
+    {
+        return false;
+    }
+
+    // create 2d array for trace data
+    // trace here means:
+    //   event_id, geo, crate_id, n_channels, (all values ch0-32), (ov), (un)
+    int dim0, dim1;
+    int trace_length = dsize / frag_cnt; // frag_cnt (nrows), trace_length (ncolumns)
+    dim0 = frag_cnt;
+    dim1 = trace_length;
+    int nrows_sub = T_NROWS_PER_WRITE; // how many rows write per time
+    int current_row_id = 0;            // starting at the first fragment
+    uint64_t tracedata_subarr[nrows_sub][dim1];
+
+    hsize_t chunk_dims[2];
+    chunk_dims[1] = trace_length;
+    chunk_dims[0] = 1.0 * 1024 * 1024 / sizeof(uint64_t) / trace_length; // 1MB
+
+    // create a new dataset under the defined group, TraceData
+    H5::IntType trace_dtype(H5::PredType::NATIVE_LONG);
+    trace_dtype.setOrder(H5T_ORDER_LE);
+
+    // extensible dataset for Traces
+    hsize_t trace_dims[2]; // initial dset shape
+    trace_dims[0] = nrows_sub;
+    trace_dims[1] = dim1;
+    hsize_t max_trace_dims[2] = {(hsize_t)frag_cnt, (hsize_t)trace_length};
+    H5::DataSpace trace_dspace(TRACE_DATA_RANK, trace_dims, max_trace_dims);
+
+    // modify dataset creation properties, e.g. enable chunking
+    H5::DSetCreatPropList cprops;
+    cprops.setChunk(TRACE_DATA_RANK, chunk_dims);
+
+    if (comp_meth == "szip")
+    {
+        cprops.setSzip(H5_SZIP_NN_OPTION_MASK, 16);
+    }
+    else if (comp_meth == "gzip")
+    {
+        cprops.setDeflate(gfactor);
+    }
+
+    // create Traces dataset
+    H5::DataSet trace_dset = group->createDataSet("V785Data", trace_dtype, trace_dspace, cprops);
+
+    H5::DataSpace fspace;
+    hsize_t size[2];
+    size[0] = 0;
+    size[1] = dim1;
+    hsize_t offset[2];
+    offset[1] = 0;
+    hsize_t trace_dims1[2];
+    trace_dims1[1] = dim1;
+
+    while (current_row_id < dim0)
+    {
+        // prep data
+        for (int i = 0; i < nrows_sub; i++)
+        {
+            for (int j = 0; j < dim1; j++)
+            {
+                tracedata_subarr[i][j] = (*pfragdata)[(i + current_row_id) * dim1 + j];
+            }
+        }
+
+        // extend size along dim0
+        size[0] += nrows_sub;
+
+        // extend the dataset
+        trace_dset.extend(size);
+
+        // select a hyperslab
+        fspace = trace_dset.getSpace();
+        offset[0] = current_row_id;
+        trace_dims1[0] = nrows_sub;
+        fspace.selectHyperslab(H5S_SELECT_SET, trace_dims1, offset);
+
+        trace_dset.write(tracedata_subarr, trace_dtype, trace_dspace, fspace);
+
+        current_row_id += nrows_sub;
+    }
+
+    // clean up
+    delete pfragdata;
+
+    // write attribute for column names
+    // event_id, geo, crate_id, n_channels, (all values ch0-32), (ov), (un)
+    std::string column_names = "Event_ID,GEO,Crate_ID,Channel_Num(#),Value(Ch0-Ch#),Overflow_Code(Ch0-Ch#),Threshold_Code(Ch0-Ch#)";
+    H5::StrType stype(H5::PredType::C_S1, column_names.length() + 1);
+    H5::Attribute *attr = new H5::Attribute(
+        trace_dset.createAttribute("Column Names", stype,
+                                    H5::DataSpace(H5S_SCALAR)));
+    attr->write(stype, column_names);
+
+    delete attr;
+
+    // // create mem data type for FragmentData_V785
+    // const H5::CompType frag_dtype(sizeof(FragmentData_V785));
+    // auto int16_type = H5::PredType::NATIVE_INT16;
+    // auto vint16_type = H5::VarLenType(&int16_type);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_EVENT_ID, HOFFSET(FragmentData_V785, event_id), H5::PredType::NATIVE_LONG);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_GEO, HOFFSET(FragmentData_V785, geo), H5::PredType::NATIVE_INT16);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_CRATE_ID, HOFFSET(FragmentData_V785, crate_id), H5::PredType::NATIVE_INT16);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_TOTAL_CHANNELS, HOFFSET(FragmentData_V785, n_channels), H5::PredType::NATIVE_INT16);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_VALUE, HOFFSET(FragmentData_V785, val_channel_handle), vint16_type);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_OVERFLOW, HOFFSET(FragmentData_V785, ov_channel_handle), vint16_type);
+    // frag_dtype.insertMember(V785_FRAGMENT_DATA_THRESHOLD, HOFFSET(FragmentData_V785, un_channel_handle), vint16_type);
+
+    // hsize_t dim[] = {dsize};
+    // H5::DataSpace *dspace = new H5::DataSpace(FRAGMENT_DATA_RANK, dim);
+
+    // // create a dataset under the new group
+    // H5::DataSet *dset = new H5::DataSet(group->createDataSet(FRAGMENTS_DSET_NAME, frag_dtype, *dspace));
+
+    // for (auto it = pfragdata->begin(); it != pfragdata->end(); ++it)
+    // {
+    //     (*it).val_channel.assign(static_cast<uint16_t *>((*it).val_channel_handle.p),
+    //                              static_cast<uint16_t *>((*it).val_channel_handle.p) + (*it).val_channel_handle.len);
+
+    //     (*it).ov_channel.assign(static_cast<uint16_t *>((*it).ov_channel_handle.p),
+    //                             static_cast<uint16_t *>((*it).ov_channel_handle.p) + (*it).ov_channel_handle.len);
+
+    //     (*it).un_channel.assign(static_cast<uint16_t *>((*it).un_channel_handle.p),
+    //                             static_cast<uint16_t *>((*it).un_channel_handle.p) + (*it).un_channel_handle.len);
+    // }
+
+    // write dataset: fragments
+    // dset->write(pfragdata->data(), frag_dtype);
+
+    // clean up
+    // delete pfragdata;
+    // delete dset;
+    // delete dspace;
+    //
+
     return true;
 }

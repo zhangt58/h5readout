@@ -1,6 +1,6 @@
 EXEC = h5readout
 CC = g++
-OBJ = h5readout.o processor.o main.o
+OBJ = h5readout.o processor.o main.o modules.o
 #
 #spdaq22: Debian 8
 # DAQPATH=/usr/opt/daq/experimental/11.3-018
@@ -81,6 +81,9 @@ pack:
 
 test3:
 	./h5readout -i test/CCF-data/run-8262-00.evt
+
+test4:
+	./h5readout ../../nscl_data/VME/run-0053-00.evt -o 2.h5 -t VME --modules V785 #-n 10
 
 memcheck:
 	valgrind -v --tool=memcheck \

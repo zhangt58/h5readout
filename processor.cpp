@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <memory>
 
 #include <cstring>
@@ -6,6 +7,10 @@
 
 #include <FragmentIndex.h>
 #include <CRingItemFactory.h>
+
+//#include <fragment.h>
+//#include <DataFormat.h>
+//#include "FragmentIndexXYZ.h"
 
 #include <DDASHitUnpacker.h>
 
@@ -21,7 +26,8 @@ void processRingItem(CRingItemProcessor &processor, CRingItem *item,
                      std::vector<uint32_t> *pscalerdata,
                      int &verbosity,
                      std::string &ctrl_type,
-                     std::vector<std::string> *pmodules)
+                     std::vector<std::string> *pmodules,
+                     std::vector<uint64_t> *pfragdata_v785)
 {
     std::unique_ptr<CRingItem> item_(item);
     std::unique_ptr<CRingItem> castableItem(CRingItemFactory::createRingItem(*item_));
@@ -56,12 +62,16 @@ void processRingItem(CRingItemProcessor &processor, CRingItem *item,
     {
         // count events
         CPhysicsEventItem &phy_item = dynamic_cast<CPhysicsEventItem &>(*castableItem);
-        if (ctrl_type == "DDAS") {
+        if (ctrl_type == "DDAS")
+        {
             processor.processEvent(phy_item, event_id, frag_cnt, pfragdata, ptracedata, verbosity);
-        } else if (ctrl_type == "VME") {
-            // processor.processVMEEvent(phy_item, event_id, frag_cnt)
+            event_id++;
         }
-        event_id++;
+        else if (ctrl_type == "VME")
+        {
+            processor.processEvent_VME(phy_item, event_id, frag_cnt, pfragdata_v785, verbosity);
+            event_id++;
+        }
         break;
     }
     case PHYSICS_EVENT_COUNT:
@@ -176,8 +186,101 @@ void CRingItemProcessor::processTextItem(CRingTextItem &item, int &verbosity)
 }
 
 /**
+ * processEvent_VME
+ *   process event item from VME/V785 module
+ * 
+ */
+
+void CRingItemProcessor::processEvent_VME(CPhysicsEventItem &item,
+                                          uint64_t &event_id, uint64_t &frag_cnt,
+                                          std::vector<uint64_t> *pfragdata,
+                                          int &verbosity)
+
+{
+    CRingItem *pItem = CRingItemFactory::createRingItem(item);
+    uint32_t size_in_byte = pItem->getBodySize();
+    uint32_t nsize = size_in_byte / sizeof(uint16_t);
+    uint16_t *p = reinterpret_cast<uint16_t *>(pItem->getBodyPointer());
+
+    // if (item.hasBodyHeader())
+    // {
+    //     std::cout << " Timestamp: " << item.getEventTimestamp() << " "
+    //               << " Source ID: " << item.getSourceId();
+    // }
+    // fragment size
+    // followed by nsize-1 16bits word, every two (32bits) is one record
+    uint32_t n_record = *p++;
+
+    char number[32];
+    auto precords = new std::vector<uint32_t>();
+
+    for (int i = 0; i < ((nsize - 1) / 2); ++i)
+    {
+        // read two words every time
+        uint32_t record = 0, temp;
+        record = *p++;
+        temp = *p++;
+        record |= (temp << 16);
+        precords->push_back(record);
+    }
+
+    uint16_t last_geo;
+    uint16_t last_crate_id;
+    uint16_t last_n_channels;
+    uint64_t last_event_id;
+    uint16_t chid;
+
+    uint16_t temp_val[32], temp_ov[32], temp_un[32];
+
+    for (auto it = precords->begin(); it != precords->end(); ++it)
+    {
+        if (*it != 0xFFFFFFFF)
+        {
+            VME::V785Hit hit(*it);
+            // // printf("%08x\n", *it);
+            // printf("GEO: %4d, Type: %4d, Crate_ID: %4d, Channels: %4d, Channel_ID: %4d, Value: %4d, UN: %4d, OV: %4d, EVT_ID: %4d\n",
+            //        hit.get_geo(),
+            //        hit.get_type(), hit.get_crate_id(),
+            //        hit.get_channels(), hit.get_channel_id(),
+            //        hit.get_value(), hit.get_threshold_code(), hit.get_overflow_code(), hit.get_event_id());
+            if (hit.is_header())
+            {
+                last_geo = hit.get_geo();
+                last_crate_id = hit.get_crate_id();
+                last_n_channels = hit.get_channels();
+            }
+            else if (hit.is_datum())
+            {
+                chid = hit.get_channel_id();
+                temp_val[chid] = hit.get_value();
+                temp_ov[chid] = hit.get_overflow_code();
+                temp_un[chid] = hit.get_threshold_code();
+            }
+            else if (hit.is_eob())
+            {
+                // event_id, geo, crate_id, n_channels, (all values ch0-32), (ov), (un)
+                pfragdata->push_back(hit.get_event_id());
+                pfragdata->push_back(static_cast<uint64_t>(last_geo));
+                pfragdata->push_back(static_cast<uint64_t>(last_crate_id));
+                pfragdata->push_back(static_cast<uint64_t>(last_n_channels));
+                for(auto &v : temp_val){
+                    pfragdata->push_back(static_cast<uint64_t>(v));
+                }
+                for(auto &v : temp_ov){
+                    pfragdata->push_back(static_cast<uint64_t>(v));
+                }
+                for(auto &v : temp_un){
+                    pfragdata->push_back(static_cast<uint64_t>(v));
+                }
+                ++frag_cnt;
+            }
+        }
+    }
+}
+
+/**
  * processEvent
- *  Physics event item.
+ *  Physics event item (DDAS).
  *
  */
 void CRingItemProcessor::processEvent(CPhysicsEventItem &item,
@@ -186,16 +289,6 @@ void CRingItemProcessor::processEvent(CPhysicsEventItem &item,
                                       std::vector<uint16_t> *ptracedata,
                                       int &verbosity)
 {
-    //    fprintf(stdout, "Processing evt-id: %u\n", event_id);
-    //    return 0;
-    //
-    //    std::cout << " " << "BodySize "  << item.getBodySize() << std::endl;
-    //    std::cout << " " << "toString " << item.toString() << std::endl;
-    //    if (item.hasBodyHeader()) {
-    //        std::cout << "Timestamp: " << item.getEventTimestamp() << "\n"
-    //                  << "Source ID: " << item.getSourceId() << std::endl;
-    //    }
-
     FragmentIndex indexer(static_cast<uint16_t *>(item.getBodyPointer()));
 
     int total_fragmts = indexer.getNumberFragments();

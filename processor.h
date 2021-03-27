@@ -15,6 +15,7 @@
 #include <CGlomParameters.h>
 
 #include "h5readout.h"
+#include "modules.h"
 
 class CRingItemProcessor
 {
@@ -34,6 +35,11 @@ public:
                               std::vector<FragmentData> *pfragdata, // all FragmentData
                               std::vector<uint16_t> *ptracedata,    // all tracedata
                               int &verbosity);
+    virtual void processEvent_VME(CPhysicsEventItem &item,
+                                  uint64_t &event_id,
+                                  uint64_t &frag_cnt,
+                                  std::vector<uint64_t> *pfragdata,
+                                  int &verbosity);
     virtual void processEventCount(CRingPhysicsEventCountItem &item);
     virtual void processFormat(CDataFormatItem &item, RunMetaData &run_meta);
     virtual void processGlomParams(CGlomParameters &item, int &verbosity);
@@ -54,8 +60,9 @@ void processRingItem(CRingItemProcessor &processor, CRingItem *item,
                      std::vector<uint32_t> *pscalerlen,
                      std::vector<uint32_t> *pscalerdata,
                      int &verbosity,
-                     std::string &ctrl_type,            // controller type
-                     std::vector<std::string> *pmodules // module list
+                     std::string &ctrl_type,               // controller type
+                     std::vector<std::string> *pmodules,   // module list
+                     std::vector<uint64_t> *pfragdata_v785 // for v785 only
 );
 
 static std::unordered_map<std::string, uint16_t> const ITEM_TYPE = {

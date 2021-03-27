@@ -10,6 +10,7 @@
 #include "processor.h"
 #include "misc.h"
 #include "h5readout.h"
+#include "modules.h"
 
 int main(int argc, char **argv)
 {
@@ -73,17 +74,19 @@ int main(int argc, char **argv)
   // controller type
   std::string ctrl_type = argparser.get_ctrl_type();
 
+  // module list for non-DDAS controller type
   std::vector<std::string> *module_list = argparser.get_module_list();
 
   // exclude type list
   std::vector<uint16_t> *pexclude = argparser.get_exclude_types();
 
   // debug
-  argparser.print_all_args();
+  // argparser.print_all_args();
 
   // Ring Item types that can be sampled
   std::vector<std::uint16_t> sample;
   // Ring Item types that can be filtered out
+  // by passing --exclude argument, which accepts a string of item types, separated by ','
   // std::vector<std::uint16_t> exclude; // = {PHYSICS_EVENT};
   std::vector<std::uint16_t> exclude = {pexclude->begin(), pexclude->end()};
 
@@ -103,10 +106,10 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  // container for all fragments (exclude trace)
+  // (DDAS) container for all fragments (exclude trace)
   std::vector<FragmentData> *pfragdata = new std::vector<FragmentData>();
 
-  // container for all trace data
+  // (DDAS) container for all trace data
   std::vector<uint16_t> *ptracedata = new std::vector<uint16_t>();
 
   // container for all scaler data
@@ -117,6 +120,9 @@ int main(int argc, char **argv)
 
   // and timestamp
   std::vector<time_t> *pscalerts = new std::vector<time_t>();
+
+  // container for fragments (VME/V785)
+  std::vector<uint64_t> *pfragdata_v785 = new std::vector<uint64_t>();
 
   CRingItem *pItem;
   uint64_t event_id = 0; // event count
@@ -136,7 +142,7 @@ int main(int argc, char **argv)
                       pfragdata, ptracedata,
                       pscalerts, pscalerlen, pscalerdata,
                       verbosity,
-                      ctrl_type, module_list);
+                      ctrl_type, module_list, pfragdata_v785);
     }
   }
   catch (CErrnoException &ex)
@@ -165,7 +171,7 @@ int main(int argc, char **argv)
 
   try
   {
-    // H5::Exception::dontPrint();
+    //H5::Exception::dontPrint();
     // create an h5 file handle
     H5::H5File *h5file = new H5::H5File(output_filepath, H5F_ACC_TRUNC);
 
@@ -180,8 +186,30 @@ int main(int argc, char **argv)
       fprintf(stdout, "Writing meta data is done.\n");
     }
 
-    // fragment data
-    bool frag_is_written = write_fragdata(pfragdata, evt_grp);
+    bool frag_is_written;
+    if (ctrl_type == "DDAS")
+    {
+      // fragment data
+      frag_is_written = write_fragdata(pfragdata, evt_grp);
+    }
+    else
+    {
+      // for (auto it = pfragdata_v785->begin(); it != pfragdata_v785->end(); ++it)
+      // {
+      //   for (int j = 0; j < 2; ++j)
+      //   {
+      //     for (int i = 0; i < 100; ++i)
+      //     {
+      //       std::cout << *it++ << " ";
+      //     }
+      //     std::cout << std::endl;
+      //   }
+      //   break;
+      // }
+
+      frag_is_written = write_fragdata_vme(pfragdata_v785, evt_grp, frag_cnt,
+                                           comp_meth, gfactor);
+    }
     if (frag_is_written)
     {
       fprintf(stdout, "Writing fragment data is done.\n");

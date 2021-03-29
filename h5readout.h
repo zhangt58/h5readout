@@ -12,7 +12,7 @@
 #include "modules.h" // VME modules
 
 // version
-const std::string APP_VERSION = "2.0";
+const std::string APP_VERSION = "3.0";
 
 // rows of trace data written at once.
 const int T_NROWS_PER_WRITE = 1;

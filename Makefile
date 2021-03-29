@@ -83,7 +83,8 @@ test3:
 	./h5readout -i test/CCF-data/run-8262-00.evt
 
 test4:
-	./h5readout ../../nscl_data/VME/run-0053-00.evt -o 2.h5 -t VME --modules V785 #-n 10
+	# ./h5readout ../../nscl_data/VME/run-0053-00.evt -o 2.h5 -t VME --modules V785 #-n 10
+	./h5readout ../../nscl_data/VME/run-0053-00.evt -t VME --modules V785
 
 memcheck:
 	valgrind -v --tool=memcheck \

@@ -960,7 +960,6 @@ bool write_fragdata_vme(std::vector<uint64_t> *pfragdata, H5::Group *group,
         column_names.append("Threshold_Code" + std::to_string(i) + ",");
     }
     column_names.append("Threshold_Code" + std::to_string(nch - 1));
-    std::cout << column_names << std::endl;
     H5::StrType stype(H5::PredType::C_S1, column_names.length() + 1);
     H5::Attribute *attr = new H5::Attribute(
         trace_dset.createAttribute("Column Names", stype,

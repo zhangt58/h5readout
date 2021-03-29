@@ -89,7 +89,7 @@ const std::string FRAGMENT_DATA_EVENT_ID("Event_ID");       // uint64_t
 // group name for physics event data
 const std::string PHYSICS_EVENT_GROUP_NAME("Events");
 
-// dataset names under physics event data group
+// dataset names under physics event data group (ddas)
 const std::string FRAGMENTS_DSET_NAME("FragmentData");
 const std::string TRACES_DSET_NAME("TraceData");
 

@@ -901,7 +901,7 @@ bool write_fragdata_vme(std::vector<uint64_t> *pfragdata, H5::Group *group,
     }
 
     // create Traces dataset
-    H5::DataSet trace_dset = group->createDataSet("V785Data", trace_dtype, trace_dspace, cprops);
+    H5::DataSet trace_dset = group->createDataSet(FRAGMENTS_DSET_NAME, trace_dtype, trace_dspace, cprops);
 
     H5::DataSpace fspace;
     hsize_t size[2];
@@ -945,11 +945,26 @@ bool write_fragdata_vme(std::vector<uint64_t> *pfragdata, H5::Group *group,
 
     // write attribute for column names
     // event_id, geo, crate_id, n_channels, (all values ch0-32), (ov), (un)
-    std::string column_names = "Event_ID,GEO,Crate_ID,Channel_Num(#),Value(Ch0-Ch#),Overflow_Code(Ch0-Ch#),Threshold_Code(Ch0-Ch#)";
+    int nch = (trace_length - 4) / 3;
+    std::string column_names = "Event_ID,GEO,Crate_ID,N_Channels,";
+    for (int i = 0; i < nch; ++i)
+    {
+        column_names.append("Value" + std::to_string(i) + ",");
+    }
+    for (int i = 0; i < nch; ++i)
+    {
+        column_names.append("Overflow_Code" + std::to_string(i) + ",");
+    }
+    for (int i = 0; i < nch - 1; ++i)
+    {
+        column_names.append("Threshold_Code" + std::to_string(i) + ",");
+    }
+    column_names.append("Threshold_Code" + std::to_string(nch - 1));
+    std::cout << column_names << std::endl;
     H5::StrType stype(H5::PredType::C_S1, column_names.length() + 1);
     H5::Attribute *attr = new H5::Attribute(
         trace_dset.createAttribute("Column Names", stype,
-                                    H5::DataSpace(H5S_SCALAR)));
+                                   H5::DataSpace(H5S_SCALAR)));
     attr->write(stype, column_names);
 
     delete attr;

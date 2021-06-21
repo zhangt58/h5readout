@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 
-<title>ddas-2 slides</title><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>ddas-mcp slides</title><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 <!-- General and theme style sheets -->
 <link rel="stylesheet" href="https://unpkg.com/reveal.js@4.0.2/dist/reveal.css">
@@ -14420,7 +14420,8 @@ div.jp-OutputPrompt {
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="Example-2:-MCP-Detector-Data-from-DDAS">Example-2: MCP Detector Data from DDAS<a class="anchor-link" href="#Example-2:-MCP-Detector-Data-from-DDAS">&#182;</a></h1><p>This is a complete notebook to show how to analysis the MCP detector data from DDAS (which is very similar to PPAC), with pure Python script, the required knowledge about the data is also explained.</p>
-<p>Tong Zhang <a href="mailto:zhangt@frib.msu.edu">zhangt@frib.msu.edu</a></p>
+<p>The raw event data was generated from DDAS on 2020-12-15, provided by Scott Cogan (BIM), and processed with <a href="https://github.com/archman/h5readout">h5readout</a> to convert and compress to HDF5 format.</p>
+<p>Tong Zhang (<a href="mailto:zhangt@frib.msu.edu">zhangt@frib.msu.edu</a>)</p>
 <p>2021-06-21</p>
 
 </div>
@@ -15328,7 +15329,7 @@ height=248
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>The energy signal is correlated with the peak height rising from the lethargy area, the 'Energy' column of FragmentData is processed by the DDAS firmware with the builtin algorithm.</p>
-<p>Here, an approximated approach is applied to generate the pseduo energy column, by measuring the peak height from the max and min of the trace data, which is rough by fast.</p>
+<p>Here, an approximate approach is applied to generate the pseduo energy column, by measuring the peak height from the max and min of the trace data, which is rough by fast.</p>
 
 </div>
 </div><div class="fragment"><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">

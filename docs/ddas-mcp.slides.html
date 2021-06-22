@@ -15251,7 +15251,7 @@ height=485
 </div></section><section>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Background-noise">Background noise<a class="anchor-link" href="#Background-noise">&#182;</a></h2><p>Now you may have the needs to suppress the background noise signals, the way to estimate the noise and valid signal is to find out the siangl threshold, which is indicated by Energy column in the FragmentData.</p>
+<h2 id="Background-noise">Background noise<a class="anchor-link" href="#Background-noise">&#182;</a></h2><p>Now you may have the needs to suppress the background noise signals, the way to estimate the noise and valid signal is to find out the signal threshold, which is indicated by Energy column in the FragmentData.</p>
 <p>But the Energy value read from FragmentData for this run could not be used (you can see there's lots of saturated readings), the approach below shows how to get 'Energy' info from the orignal TraceData (remember we have another super large table for TraceData under '/Events' group)</p>
 
 </div>
@@ -15329,7 +15329,7 @@ height=248
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>The energy signal is correlated with the peak height rising from the lethargy area, the 'Energy' column of FragmentData is processed by the DDAS firmware with the builtin algorithm.</p>
-<p>Here, an approximate approach is applied to generate the pseduo energy column, by measuring the peak height from the max and min of the trace data, which is rough by fast.</p>
+<p>Here, an approximate approach is applied to generate the pseduo energy column, by measuring the peak height from the max and min of the trace, which is rough but fast.</p>
 
 </div>
 </div><div class="fragment"><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
@@ -15370,8 +15370,8 @@ height=248
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[17]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Keep in mind the valid events should have 4 fragments, the two lines below calculate the pseduo energy</span>
-<span class="c1"># by averaging the 4 height values to be the final Energy info</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Keep in mind the valid events should have 4 fragments, the two lines below calculate</span>
+<span class="c1"># the pseduo energy by averaging the 4 height values to be the final Energy info</span>
 <span class="n">_ind</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">df_multi</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_list</span><span class="p">()]</span>
 <span class="n">df_multi</span><span class="p">[</span><span class="s1">&#39;avg_height&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">df2</span><span class="p">[</span><span class="n">_ind</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_ind</span><span class="p">))]</span>
 </pre></div>
